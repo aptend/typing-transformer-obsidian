@@ -21,19 +21,32 @@ esbuild.build({
 	},
 	entryPoints: ['main.ts'],
 	bundle: true,
-	external: ['obsidian', 'electron', ...builtins],
+	external: [
+		'obsidian', 
+		'electron',
+		"codemirror",
+		"@codemirror/autocomplete",
+		"@codemirror/closebrackets",
+		"@codemirror/commands",
+		"@codemirror/fold",
+		"@codemirror/gutter",
+		"@codemirror/history",
+		"@codemirror/language",
+		"@codemirror/rangeset",
+		"@codemirror/rectangular-selection",
+		"@codemirror/search",
+		"@codemirror/state",
+		"@codemirror/stream-parser",
+		"@codemirror/text",
+		"@codemirror/view",
+		...builtins
+	],
 	format: 'cjs',
 	watch: !prod,
 	target: 'es2016',
 	logLevel: "info",
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
-	outfile: 'main.js',
-})
-.then(() => {
-	['main.js', /*'manifest.json'*/].forEach(fname => {
-		fs.copyFile(fname, path.join(env.target_dir, fname), (e) => {if (e) throw e})
-	});
-})
-.catch(() => process.exit(1))
+	outfile: path.join(env.target_dir, 'main.js')
+}).catch(() => process.exit(1))
 
