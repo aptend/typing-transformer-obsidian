@@ -18,3 +18,7 @@ main.js
 
 # obsidian
 data.json
+
+
+# tmp file
+.env

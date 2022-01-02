@@ -1,6 +1,9 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from 'builtin-modules'
+import fs from "fs";
+import path from "path";
+
 
 const banner =
 `/*
@@ -10,6 +13,7 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = (process.argv[2] === 'production');
+const env = JSON.parse(fs.readFileSync('.env'));
 
 esbuild.build({
 	banner: {
@@ -25,4 +29,11 @@ esbuild.build({
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
 	outfile: 'main.js',
-}).catch(() => process.exit(1));
+})
+.then(() => {
+	['main.js', /*'manifest.json'*/].forEach(fname => {
+		fs.copyFile(fname, path.join(env.target_dir, fname), (e) => {if (e) throw e})
+	});
+})
+.catch(() => process.exit(1))
+
