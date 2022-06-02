@@ -2,7 +2,7 @@
 	"name": "obsidian-my-typing",
 	"version": "0.0.1",
 	"description": "This is plugin flatter your typing",
-	"main": "main.js",
+	"main": "src/main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "node esbuild.config.mjs production"
