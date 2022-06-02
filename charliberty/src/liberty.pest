@@ -1,0 +1,39 @@
+WHITSPACE = _{" "}
+
+Cn = {'\u{4e00}'..'\u{9fa5}'+}
+Eng = {ASCII_ALPHA+}
+Num = @{ASCII_DIGIT+ ~ "."? ~ ASCII_DIGIT* ~ ^"e"? ~ ASCII_DIGIT*}
+
+MultiSpace = {" "{2,}}
+FWPunct = {"。"|"，"|"；"|"、"|"！"|"？"|"："}
+Punct = {"."|","|";"|"!"|"?"|":"}
+
+inlineCodeChar = _{!"`" ~ ANY}
+InlineCode = @{"`" ~ inlineCodeChar* ~ "`"}
+
+inlineMathChar = _{"\\$" | !"$" ~ ANY}
+InlineMath = @{"$" ~ inlineMathChar* ~ "$"}
+
+SpecialBlock = @{
+	InlineCode
+	| InlineMath
+	| ^"a.m"
+	| ^"p.m"
+}
+
+OtherChar = _{!(MultiSpace | FWPunct | Punct) ~ ANY}
+Other = {OtherChar+}
+
+Block = _{ 
+	MultiSpace
+    | WHITSPACE
+	| SpecialBlock
+	| Punct 
+    | FWPunct
+	| Num
+	| Cn 
+    | Eng
+    | Other
+}
+
+Line = {SOI ~ Block* ~ EOI}
