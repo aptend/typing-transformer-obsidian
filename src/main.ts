@@ -8,7 +8,7 @@ import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm'
 
 import init, { formatLine } from '../liberty-web/charliberty'
 
-import { RuleBatch, LineHeadRule, PairRule, Two2OneRule } from './rule_ext';
+import { RuleBatch, LineHeadRule, PairRule, Two2OneRule, BlockRule } from './rule_ext';
 
 import { FW, SW } from './const';
 
@@ -75,7 +75,7 @@ export default class MyTyping extends Plugin {
 		await init(wasmbin)
 
 		// make state machine ready
-		this.ruleBatch = new RuleBatch(new LineHeadRule(), new PairRule(), new Two2OneRule())
+		this.ruleBatch = new RuleBatch(new LineHeadRule(), new PairRule(), new Two2OneRule(), new BlockRule())
 
 
 

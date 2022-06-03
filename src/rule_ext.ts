@@ -194,3 +194,84 @@ export class PairRule implements StateMachineRule {
         }
     }
 }
+
+
+
+// generate code block and math block
+// this state is much like combining Two2One and Pair, is there a way to simplify it?
+const enum BlockState { Start, PreparePair, PrepareBlockI, PrepareBlockII, ConfirmPair, ConfirmBlock, Fail }
+const BlockMap = new Map<string, { counterpart: string; blockIns: string, blockSel: number }>([
+    [FW.DOT, { counterpart: '`', blockIns: '``\n```', blockSel: 2 }],
+    [FW.MONEY, { counterpart: '$', blockIns: '$\n$$', blockSel: 1 }],
+])
+const isBlockCounterpart = (char: string): boolean => {
+    for (let [_, item] of BlockMap) {
+        if (item.counterpart == char) { return true }
+    }
+    return false
+}
+export class BlockRule implements StateMachineRule {
+    state: BlockState
+    matched: string
+    constructor() { this.reset() }
+    reset() {
+        this.state = BlockState.Start
+        this.matched = ""
+    }
+
+    next(char: string) {
+        switch (this.state) {
+            case BlockState.Start:
+                if (BlockMap.has(char)) {
+                    this.state = BlockState.PreparePair
+                } else if (isBlockCounterpart(char)) {
+                    this.state = BlockState.PrepareBlockI
+                }
+                this.matched = char
+                break;
+            case BlockState.PreparePair:
+                if (char === this.matched) {
+                    this.state = BlockState.ConfirmPair
+                } else {
+                    this.state = BlockState.Fail
+                }
+                break;
+            case BlockState.PrepareBlockI:
+                if (BlockMap.get(char)?.counterpart === this.matched) {
+                    this.state = BlockState.PrepareBlockII
+                    this.matched = char
+                } else {
+                    this.state = BlockState.Fail
+                }
+                break;
+            case BlockState.PrepareBlockII:
+                if (char === BlockMap.get(this.matched).counterpart) {
+                    this.state = BlockState.ConfirmBlock
+                } else {
+                    this.state = BlockState.Fail
+                }
+                break;
+            case BlockState.ConfirmPair:
+            case BlockState.ConfirmBlock:
+            case BlockState.Fail:
+                break;
+        }
+    }
+
+    get hasResult(): boolean { return this.state === BlockState.ConfirmBlock || this.state === BlockState.ConfirmPair }
+    resultSpecs(pos: number): TransactionSpec[] {
+        let info = BlockMap.get(this.matched)
+        if (this.state === BlockState.ConfirmBlock) {
+            let newPos = pos + info.blockSel
+            return [{
+                changes: { from: pos, to: pos + 1, insert: info.blockIns },
+                selection: { anchor: newPos, head: newPos }
+            }]
+        } else if (this.state === BlockState.ConfirmPair) {
+            return [{
+                changes: { from: pos - 1, to: pos, insert: info.counterpart + info.counterpart },
+                selection: { anchor: pos, head: pos }
+            }]
+        }
+    }
+}
