@@ -1,11 +1,12 @@
 import { App, Editor, editorEditorField, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 import { EditorState, StateField, Transaction, TransactionSpec, Text } from '@codemirror/state';
+import { EditorView, ViewUpdate } from '@codemirror/view';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm'
 import init, { formatLine } from '../liberty-web/charliberty'
 
 import { RuleBatch, LineHeadRule, PairRule, Two2OneRule, BlockRule } from './rule_ext';
-import { libertyZone } from './ext_libertyzone'
+import { libertyZone, libertyZoneSize } from './ext_libertyzone'
 import { FW, SW } from './const';
 
 const SIDES_INSERT_MAP = new Map<string, { l: string, r: string }>([
@@ -15,6 +16,7 @@ const SIDES_INSERT_MAP = new Map<string, { l: string, r: string }>([
 	[FW.RIGHTQUO, { l: FW.LEFTQUO, r: FW.RIGHTQUO }],
 ]);
 
+const PUNCTS = new Set<string>(" ，。：？,.:?");
 
 interface MyTypingSettings {
 	mySetting: string,
@@ -119,7 +121,8 @@ export default class MyTyping extends Plugin {
 			countDocChanges,
 			libertyZone(),
 			EditorState.transactionFilter.of(this.sidesInsertFilter),
-			EditorState.transactionFilter.of(this.continuousFullWidthCharFilter)
+			EditorState.transactionFilter.of(this.continuousFullWidthCharFilter),
+			EditorView.updateListener.of(this.addLiberty),
 		])
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
@@ -137,6 +140,30 @@ export default class MyTyping extends Plugin {
 
 	onunload() {
 
+	}
+
+	addLiberty = ({ view, docChanged, selectionSet }: ViewUpdate) => {
+		if (docChanged && selectionSet) {
+			let state = view.state
+			let mainSel = state.selection.asSingle().main
+			if (mainSel.anchor != mainSel.head) { return } // skip range selection
+
+
+			let line = state.doc.lineAt(mainSel.anchor)
+			let from = Math.max(line.from, mainSel.anchor - state.facet(libertyZoneSize))
+			let to = mainSel.anchor
+			if (from == to) { return } // skip empty string
+
+			let toUpdate = state.doc.sliceString(from, to)
+			if (PUNCTS.has(toUpdate.charAt(toUpdate.length - 1))) {
+				let trimmed = toUpdate.trim()
+				if (trimmed === '') { return } // skip empty string
+				let lspace = toUpdate.length - toUpdate.trimStart().length
+				let rspace = toUpdate.length - toUpdate.trimEnd().length
+
+				view.dispatch({ changes: { from: from + lspace, to: to - rspace, insert: formatLine(trimmed) } })
+			}
+		}
 	}
 
 	continuousFullWidthCharFilter = (tr: Transaction): TransactionSpec | readonly TransactionSpec[] => {
