@@ -8,11 +8,16 @@ import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm'
 
 import init, { formatLine } from '../liberty-web/charliberty'
 
-import './const';
+import { RuleBatch, LineHeadRule, PairRule, Two2OneRule } from './rule_ext';
 
-import {RuleBatch, LineHeadRule, PairRule, Two2OneRule} from './rule_ext';
+import { FW, SW } from './const';
 
-
+const SIDES_INSERT_MAP = new Map<String, { l: string, r: string }>([
+	[FW.DOT, { l: SW.DOT, r: SW.DOT }],
+	[FW.MONEY, { l: SW.MONEY, r: SW.MONEY }],
+	[FW.LEFTQUO, { l: FW.LEFTQUO, r: FW.RIGHTQUO }],
+	[FW.RIGHTQUO, { l: FW.LEFTQUO, r: FW.RIGHTQUO }],
+]);
 
 interface MyTypingSettings {
 	mySetting: string,
@@ -113,7 +118,11 @@ export default class MyTyping extends Plugin {
 		console.log("active call create")
 		createF(EditorState.create())
 		let countDocChanges = StateField.define(spec)
-		this.registerEditorExtension([countDocChanges, EditorState.transactionFilter.of(this.sidesInsertFilter), EditorState.transactionFilter.of(this.continuousFullWidthCharFilter)])
+		this.registerEditorExtension([
+			countDocChanges,
+			EditorState.transactionFilter.of(this.sidesInsertFilter),
+			EditorState.transactionFilter.of(this.continuousFullWidthCharFilter)
+		])
 
 
 		if (this.settings.debug) {
@@ -144,7 +153,7 @@ export default class MyTyping extends Plugin {
 		let changes: TransactionSpec[] = []
 		tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
 			let char = inserted.sliceString(0)
-			if (!shouldHijack || fromA != toA || toB != fromB + 1 || !CONTIN_CHARS_SET.has(char)) {
+			if (!shouldHijack || fromA != toA || toB != fromB + 1 || !FW.CONTIN_CHARS_SET.has(char)) {
 				shouldHijack = false
 				return
 			}

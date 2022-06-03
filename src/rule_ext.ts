@@ -1,5 +1,5 @@
 import { TransactionSpec } from '@codemirror/state';
-import './const';
+import {FW, SW} from './const';
 
 
 
@@ -43,8 +43,8 @@ export class RuleBatch {
 
 
 const enum LineHeadState { Start, LineHead, Success, Fail }
-const LineHeadMap = new Map<string, string>([[FW_GT, '>'], [FW_SLASH, '/']])
-export class LineHeadRule {
+const LineHeadMap = new Map<string, string>([[FW.GT, SW.GT], [FW.SLASH, SW.SLASH]])
+export class LineHeadRule implements StateMachineRule {
     state: LineHeadState
     matched: string
     constructor() { this.reset() }
@@ -84,10 +84,10 @@ export class LineHeadRule {
 }
 
 
-
+// turn 2 continous full-width symbols into 1 semi-width symbol
 const enum Two2OneState { Start, HaveOne, Success, Fail }
-const Two2OneMap = new Map<string, string>([[FW_FULLSTOP, '.'], [FW_GT, '>'], [FW_SLASH, '/']])
-export class Two2OneRule {
+const Two2OneMap = new Map<string, string>([[FW.FULLSTOP, SW.FULLSTOP], [FW.GT, SW.GT], [FW.SLASH, SW.SLASH]])
+export class Two2OneRule implements StateMachineRule {
     state: Two2OneState
     matched: string
     constructor() { this.reset() }
@@ -124,14 +124,14 @@ export class Two2OneRule {
 }
 
 
-
+// auto pair for full-width symbols
 const enum PairState { Start, PreparePair, PrepareConvertI, PrepareConvertII, ConfirmPair, ConfirmCovert, Fail }
 const PairMap = new Map<string, { counterpart: string; covertto: string }>([
-    [FW_LT, { counterpart: FW_GT, covertto: '<' }],
-    [FW_LEFTPAREN, { counterpart: FW_RIGHTPAREN, covertto: '()' }],
-    [FW_LEFTQUO, { counterpart: FW_RIGHTQUO, covertto: '""' }],
+    [FW.LT, { counterpart: FW.GT, covertto: SW.LT }],
+    [FW.LEFTPAREN, { counterpart: FW.RIGHTPAREN, covertto: SW.LEFTPAREN + SW.RIGHTPAREN }],
+    [FW.LEFTQUO, { counterpart: FW.RIGHTQUO, covertto: SW.LEFTQUO + SW.RIGHTQUO }],
 ])
-export class PairRule {
+export class PairRule implements StateMachineRule {
     state: PairState
     matched: string
     constructor() { this.reset() }
