@@ -5,7 +5,7 @@ import { EditorView, ViewUpdate } from '@codemirror/view';
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm'
 import init, { formatLine } from '../liberty-web/charliberty'
 
-import { RuleBatch, LineHeadRule, PairRule, Two2OneRule, BlockRule } from './rule_ext';
+import { RuleBatch, LineHeadRule, PairRule, Two2OneRule, BlockRule } from './ext_rule';
 import { libertyZone, libertyZoneSize } from './ext_libertyzone'
 import { FW, SW } from './const';
 
@@ -68,6 +68,7 @@ export default class MyTyping extends Plugin {
 	ruleBatch: RuleBatch;
 
 	async onload() {
+		console.log('loading my typing plugin');
 		await this.loadSettings();
 
 		// make wasm ready
@@ -77,38 +78,12 @@ export default class MyTyping extends Plugin {
 		this.ruleBatch = new RuleBatch(new LineHeadRule(), new PairRule(), new Two2OneRule(), new BlockRule())
 
 
-
-		console.log('==load my typing plugin==');
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
 			id: 'open-sample-modal-simple',
 			name: 'Open sample modal (simple)',
 			callback: () => {
 				new SampleModal(this.app).open();
-			}
-		});
-
-		this.addCommand({
-			id: 'test-editor',
-			name: 'inspect MetadataCache',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				let meta = view.app.metadataCache.getFileCache(view.file)
-				console.log(meta)
-			}
-		});
-
-		this.addCommand({
-			id: 'test-wasm',
-			name: 'format the current line',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				let cursorLineNum = editor.getCursor().line
-				let s = editor.getLine(cursorLineNum)
-				let formatted = formatLine(s)
-				console.log(`format: ${formatted}`)
-				editor.replaceRange(formatted + '\n', {
-					line: cursorLineNum,
-					ch: s.length + 1,
-				})
 			}
 		});
 
@@ -127,20 +102,9 @@ export default class MyTyping extends Plugin {
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		// this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-		// 	console.log('click', evt);
-		// });
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
 
-	onunload() {
-
-	}
+	onunload() { console.log('loading my typing plugin'); }
 
 	addLiberty = ({ view, docChanged, selectionSet }: ViewUpdate) => {
 		if (docChanged && selectionSet) {

@@ -14,7 +14,7 @@ export function libertyZone(options: { size?: number } = {}): Extension {
 const showToLiberty = ViewPlugin.fromClass(class {
     decorations: DecorationSet
 
-    constructor(view: EditorView) {
+    constructor(_: EditorView) {
         this.decorations = Decoration.none
     }
 
