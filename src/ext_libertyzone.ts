@@ -3,41 +3,41 @@
 import { Facet, Extension } from "@codemirror/state"
 import { ViewPlugin, DecorationSet, ViewUpdate, EditorView, Decoration } from "@codemirror/view"
 
-export function libertyZone(options: { size?: number } = {}): Extension {
-    return [
+
+// why spotter? because we need the plugin to provide special sections
+export type spotter = (update: ViewUpdate) => {from: number, to: number};
+
+export function libertyZone(zonespotter: spotter, options: { size?: number } = {}): Extension {
+    let exts = [
         baseTheme,
         options.size == null ? [] : libertyZoneSize.of(options.size),
-        showToLiberty,
     ]
-}
 
-const showToLiberty = ViewPlugin.fromClass(class {
-    decorations: DecorationSet
+    const showToLiberty = ViewPlugin.fromClass(class {
+        decorations: DecorationSet
 
-    constructor(_: EditorView) {
-        this.decorations = Decoration.none
-    }
-
-    update({ view: {state}, docChanged }: ViewUpdate) {
-        if (docChanged) {
-            const mainSel = state.selection.asSingle().main
-            if (mainSel.anchor == mainSel.head) {
-                const line = state.doc.lineAt(mainSel.anchor)
-                const from = Math.max(line.from, mainSel.anchor - state.facet(libertyZoneSize))
-                const to = mainSel.anchor
-                if (from != to) {
-                    this.decorations = Decoration.set([libertyZoneMark.range(from, to)])
-                }
-            }
-        } else if (this.decorations.size) {
-            console.log("clear overline", docChanged, state.selection.asSingle().main != null)
+        constructor(_: EditorView) {
             this.decorations = Decoration.none
         }
-    }
 
-}, {
-    decorations: v => v.decorations
-})
+        update(update: ViewUpdate) {
+            const range = zonespotter(update)
+            if (range === undefined) {
+                if (this.decorations.size) {
+                    this.decorations = Decoration.none
+                }
+                return
+            }
+            this.decorations = Decoration.set([libertyZoneMark.range(range.from, range.to)])
+        }
+    }, {
+        decorations: v => v.decorations
+    })
+
+    exts.push(showToLiberty)
+    return exts
+}
+
 
 const libertyZoneMark = Decoration.mark({
     attributes: { class: "cm-toLibertyZone" }

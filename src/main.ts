@@ -1,4 +1,4 @@
-import { App, Modal, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Modal, Plugin, PluginSettingTab, Pos, Setting } from 'obsidian';
 import { EditorState, StateField, Transaction, TransactionSpec } from '@codemirror/state';
 import { EditorView, ViewUpdate } from '@codemirror/view';
 
@@ -62,10 +62,10 @@ class DocChangeExtentionSpec {
 }
 
 
-
 export default class MyTyping extends Plugin {
 	settings: MyTypingSettings;
 	ruleBatch: RuleBatch;
+	specialSections: Pos[];
 
 	async onload() {
 		console.log('loading my typing plugin');
@@ -76,6 +76,7 @@ export default class MyTyping extends Plugin {
 
 		// make state machine ready
 		this.ruleBatch = new RuleBatch(new LineHeadRule(), new PairRule(), new Two2OneRule(), new BlockRule())
+		this.specialSections = []
 
 
 		// This adds a simple command that can be triggered anywhere
@@ -94,39 +95,56 @@ export default class MyTyping extends Plugin {
 		const countDocChanges = StateField.define(spec)
 		this.registerEditorExtension([
 			countDocChanges,
-			libertyZone(),
+			libertyZone(this.spotLibertyZone),
 			EditorState.transactionFilter.of(this.sidesInsertFilter),
 			EditorState.transactionFilter.of(this.continuousFullWidthCharFilter),
 			EditorView.updateListener.of(this.addLiberty),
 		])
 
+		this.registerEvent(this.app.metadataCache.on("changed", (_f, _d, meta) => {
+			this.specialSections.length = 0
+			meta.sections?.forEach((sec) => {
+				if (sec.type == "code" || sec.type == "match") {
+					this.specialSections.push(sec.position)
+				}
+			})
+		}))
+
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
 	}
 
-	onunload() { console.log('loading my typing plugin'); }
+	onunload() { console.log('unloading my typing plugin'); }
 
-	addLiberty = ({ view, docChanged, selectionSet }: ViewUpdate) => {
-		if (docChanged && selectionSet) {
-			const state = view.state
-			const mainSel = state.selection.asSingle().main
-			if (mainSel.anchor != mainSel.head) { return } // skip range selection
+	spotLibertyZone = ({ view, docChanged }: ViewUpdate): {from: number, to: number} => {
+		if (!docChanged) { return }
+		const state = view.state
+		const mainSel = state.selection.asSingle().main
+		if (mainSel.anchor != mainSel.head) { return } // skip range selection
 
+		const line = state.doc.lineAt(mainSel.anchor)
+		const from = Math.max(line.from, mainSel.anchor - state.facet(libertyZoneSize))
+		const to = mainSel.anchor
+		if (from == to) { return } // skip empty string 
+		// and special secions
+		for (const pos of this.specialSections) {
+			if (pos.start.line <= line.number && line.number <= pos.end.line) { return }
+		}
+		return {from, to}
+	}
 
-			const line = state.doc.lineAt(mainSel.anchor)
-			const from = Math.max(line.from, mainSel.anchor - state.facet(libertyZoneSize))
-			const to = mainSel.anchor
-			if (from == to) { return } // skip empty string
-
-			const toUpdate = state.doc.sliceString(from, to)
-			if (PUNCTS.has(toUpdate.charAt(toUpdate.length - 1))) {
-				const trimmed = toUpdate.trim()
-				if (trimmed === '') { return } // skip empty string
-				const lspace = toUpdate.length - toUpdate.trimStart().length
-				const rspace = toUpdate.length - toUpdate.trimEnd().length
-
-				view.dispatch({ changes: { from: from + lspace, to: to - rspace, insert: formatLine(trimmed) } })
-			}
+	addLiberty = (update: ViewUpdate) => {
+		const range = this.spotLibertyZone(update)
+		// selectionSet is important, recursive call otherwise.
+		if (range === undefined || !update.selectionSet) { return }
+		const from = range.from, to = range.to
+		const toUpdate = update.view.state.doc.sliceString(from, to)
+		if (PUNCTS.has(toUpdate.charAt(toUpdate.length - 1))) {
+			const trimmed = toUpdate.trim()
+			if (trimmed === '') { return } // skip empty string
+			const lspace = toUpdate.length - toUpdate.trimStart().length
+			const rspace = toUpdate.length - toUpdate.trimEnd().length
+			update.view.dispatch({ changes: { from: from + lspace, to: to - rspace, insert: formatLine(trimmed) } })
 		}
 	}
 
