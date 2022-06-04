@@ -12,7 +12,14 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = (process.argv[2] === 'production');
-const env = JSON.parse(fs.readFileSync('.env'));
+let pluginDir = "build"
+try {
+	pluginDir = JSON.parse(fs.readFileSync('.env')).target_dir
+} catch(e) {
+	console.log(e)
+	fs.mkdir("build", (err) => {if (err.errno != -4075) throw err })
+}
+
 
 // see https://github.com/evanw/esbuild/issues/408#issuecomment-757555771
 let wasmPlugin = {
@@ -75,6 +82,6 @@ esbuild.build({
 	logLevel: "info",
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
-	outfile: path.join(env.target_dir, 'main.js')
+	outfile: path.join(pluginDir, 'main.js')
 }).catch(() => process.exit(1))
 
