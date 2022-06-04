@@ -1,5 +1,5 @@
 
-export module FW {
+export namespace FW {
     export const DOT = "·";
     export const MONEY = "￥";
     export const FULLSTOP = "。";
@@ -10,11 +10,11 @@ export module FW {
     export const RIGHTQUO = "”";
     export const LEFTPAREN = "（";
     export const RIGHTPAREN = "）";
-    export const CONTIN_CHARS_SET = new Set<String>([DOT, MONEY, FULLSTOP, LT, GT, SLASH, LEFTQUO, LEFTPAREN, RIGHTQUO, RIGHTPAREN]);
+    export const CONTIN_CHARS_SET = new Set<string>([DOT, MONEY, FULLSTOP, LT, GT, SLASH, LEFTQUO, LEFTPAREN, RIGHTQUO, RIGHTPAREN]);
 }
 
 
-export module SW {
+export namespace SW {
     export const DOT = "`";
     export const MONEY = "$";
     export const FULLSTOP = ".";
@@ -25,5 +25,5 @@ export module SW {
     export const RIGHTQUO = '"';
     export const LEFTPAREN = "(";
     export const RIGHTPAREN = ")";
-    export const CONTIN_CHARS_SET = new Set<String>([DOT, MONEY, FULLSTOP, LT, GT, SLASH, LEFTQUO, LEFTPAREN, RIGHTQUO, RIGHTPAREN]);
+    export const CONTIN_CHARS_SET = new Set<string>([DOT, MONEY, FULLSTOP, LT, GT, SLASH, LEFTQUO, LEFTPAREN, RIGHTQUO, RIGHTPAREN]);
 }

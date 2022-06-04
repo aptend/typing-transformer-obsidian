@@ -29,7 +29,7 @@ export class RuleBatch {
     }
 
     get hasResult(): boolean {
-        for (let rule of this.rules) {
+        for (const rule of this.rules) {
             if (rule.hasResult) { this.resultRule = rule; return true }
         }
         return false
@@ -205,7 +205,7 @@ const BlockMap = new Map<string, { counterpart: string; blockIns: string, blockS
     [FW.MONEY, { counterpart: '$', blockIns: '$\n$$', blockSel: 1 }],
 ])
 const isBlockCounterpart = (char: string): boolean => {
-    for (let [_, item] of BlockMap) {
+    for (const item of BlockMap.values()) {
         if (item.counterpart == char) { return true }
     }
     return false
@@ -260,9 +260,9 @@ export class BlockRule implements StateMachineRule {
 
     get hasResult(): boolean { return this.state === BlockState.ConfirmBlock || this.state === BlockState.ConfirmPair }
     resultSpecs(pos: number): TransactionSpec[] {
-        let info = BlockMap.get(this.matched)
+        const info = BlockMap.get(this.matched)
         if (this.state === BlockState.ConfirmBlock) {
-            let newPos = pos + info.blockSel
+            const newPos = pos + info.blockSel
             return [{
                 changes: { from: pos, to: pos + 1, insert: info.blockIns },
                 selection: { anchor: newPos, head: newPos }

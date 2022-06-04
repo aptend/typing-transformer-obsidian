@@ -1,5 +1,5 @@
-import { App, Editor, editorEditorField, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import { EditorState, StateField, Transaction, TransactionSpec, Text } from '@codemirror/state';
+import { App, Modal, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { EditorState, StateField, Transaction, TransactionSpec } from '@codemirror/state';
 import { EditorView, ViewUpdate } from '@codemirror/view';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm'
@@ -87,11 +87,11 @@ export default class MyTyping extends Plugin {
 			}
 		});
 
-		let spec = new DocChangeExtentionSpec(this.settings)
-		let createF = spec.create
+		const spec = new DocChangeExtentionSpec(this.settings)
+		const createF = spec.create
 		console.log("active call create")
 		createF(EditorState.create())
-		let countDocChanges = StateField.define(spec)
+		const countDocChanges = StateField.define(spec)
 		this.registerEditorExtension([
 			countDocChanges,
 			libertyZone(),
@@ -108,22 +108,22 @@ export default class MyTyping extends Plugin {
 
 	addLiberty = ({ view, docChanged, selectionSet }: ViewUpdate) => {
 		if (docChanged && selectionSet) {
-			let state = view.state
-			let mainSel = state.selection.asSingle().main
+			const state = view.state
+			const mainSel = state.selection.asSingle().main
 			if (mainSel.anchor != mainSel.head) { return } // skip range selection
 
 
-			let line = state.doc.lineAt(mainSel.anchor)
-			let from = Math.max(line.from, mainSel.anchor - state.facet(libertyZoneSize))
-			let to = mainSel.anchor
+			const line = state.doc.lineAt(mainSel.anchor)
+			const from = Math.max(line.from, mainSel.anchor - state.facet(libertyZoneSize))
+			const to = mainSel.anchor
 			if (from == to) { return } // skip empty string
 
-			let toUpdate = state.doc.sliceString(from, to)
+			const toUpdate = state.doc.sliceString(from, to)
 			if (PUNCTS.has(toUpdate.charAt(toUpdate.length - 1))) {
-				let trimmed = toUpdate.trim()
+				const trimmed = toUpdate.trim()
 				if (trimmed === '') { return } // skip empty string
-				let lspace = toUpdate.length - toUpdate.trimStart().length
-				let rspace = toUpdate.length - toUpdate.trimEnd().length
+				const lspace = toUpdate.length - toUpdate.trimStart().length
+				const rspace = toUpdate.length - toUpdate.trimEnd().length
 
 				view.dispatch({ changes: { from: from + lspace, to: to - rspace, insert: formatLine(trimmed) } })
 			}
@@ -133,19 +133,19 @@ export default class MyTyping extends Plugin {
 	continuousFullWidthCharFilter = (tr: Transaction): TransactionSpec | readonly TransactionSpec[] => {
 		if (!tr.docChanged) { return tr }
 		let shouldHijack = true
-		let changes: TransactionSpec[] = []
+		const changes: TransactionSpec[] = []
 		tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
-			let char = inserted.sliceString(0)
+			const char = inserted.sliceString(0)
 			if (!shouldHijack || fromA != toA || toB != fromB + 1 || !FW.CONTIN_CHARS_SET.has(char)) {
 				shouldHijack = false
 				return
 			}
 
-			let prevChar = tr.startState.doc.sliceString(fromB - 1, fromB)
-			let nextChar = tr.startState.doc.sliceString(fromB, fromB + 1)
+			const prevChar = tr.startState.doc.sliceString(fromB - 1, fromB)
+			const nextChar = tr.startState.doc.sliceString(fromB, fromB + 1)
 			console.log(`prev: '${prevChar}', next: '${nextChar}'`)
 
-			let rules = this.ruleBatch
+			const rules = this.ruleBatch
 
 			rules.reset()
 			rules.next(prevChar)
@@ -166,14 +166,14 @@ export default class MyTyping extends Plugin {
 	sidesInsertFilter = (tr: Transaction): TransactionSpec | readonly TransactionSpec[] => {
 		if (!tr.docChanged) { return tr }
 		let shouldHijack = true
-		let changes: TransactionSpec[] = []
+		const changes: TransactionSpec[] = []
 		tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
-			let char = inserted.sliceString(0)
+			const char = inserted.sliceString(0)
 			if (!shouldHijack || fromA == toA || toB != fromB + 1 || !SIDES_INSERT_MAP.has(char)) {
 				shouldHijack = false
 				return
 			}
-			let insert = SIDES_INSERT_MAP.get(char)
+			const insert = SIDES_INSERT_MAP.get(char)
 			changes.push({ changes: { from: fromA, to: fromA, insert: insert.l } })
 			changes.push({ changes: { from: toA, to: toA, insert: insert.r } })
 		})

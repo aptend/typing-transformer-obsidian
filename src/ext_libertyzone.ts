@@ -20,11 +20,11 @@ const showToLiberty = ViewPlugin.fromClass(class {
 
     update({ view: {state}, docChanged }: ViewUpdate) {
         if (docChanged) {
-            let mainSel = state.selection.asSingle().main
+            const mainSel = state.selection.asSingle().main
             if (mainSel.anchor == mainSel.head) {
-                let line = state.doc.lineAt(mainSel.anchor)
-                let from = Math.max(line.from, mainSel.anchor - state.facet(libertyZoneSize))
-                let to = mainSel.anchor
+                const line = state.doc.lineAt(mainSel.anchor)
+                const from = Math.max(line.from, mainSel.anchor - state.facet(libertyZoneSize))
+                const to = mainSel.anchor
                 if (from != to) {
                     this.decorations = Decoration.set([libertyZoneMark.range(from, to)])
                 }
