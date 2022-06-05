@@ -1,16 +1,17 @@
 
 
-import { Facet, Extension } from "@codemirror/state"
+import { Facet, Extension, Compartment } from "@codemirror/state"
 import { ViewPlugin, DecorationSet, ViewUpdate, EditorView, Decoration } from "@codemirror/view"
 
+export let libertyZoneSize = new Compartment()
 
 // why spotter? because we need the plugin to provide special sections
 export type spotter = (update: ViewUpdate) => {from: number, to: number};
 
-export function libertyZone(zonespotter: spotter, options: { size?: number } = {}): Extension {
+export function libertyZone(zonespotter: spotter): Extension {
     let exts = [
         baseTheme,
-        options.size == null ? [] : libertyZoneSize.of(options.size),
+        libertyZoneSize.of(libertyZoneSizeFacet.of(20)),
     ]
 
     const showToLiberty = ViewPlugin.fromClass(class {
@@ -43,7 +44,7 @@ const libertyZoneMark = Decoration.mark({
     attributes: { class: "cm-toLibertyZone" }
 })
 
-export const libertyZoneSize = Facet.define<number, number>({
+export const libertyZoneSizeFacet = Facet.define<number, number>({
     combine: values => values.length ? Math.min(...values) : 20
 })
 

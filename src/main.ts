@@ -1,12 +1,12 @@
-import { App, Modal, Plugin, PluginSettingTab, Pos, Setting } from 'obsidian';
+import { App, Modal, Plugin, PluginSettingTab, Pos, Setting, Notice } from 'obsidian';
 import { EditorState, StateField, Transaction, TransactionSpec } from '@codemirror/state';
-import { EditorView, ViewUpdate } from '@codemirror/view';
+import { EditorView, ViewUpdate, keymap } from '@codemirror/view';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm'
 import init, { formatLine } from '../liberty-web/charliberty'
 
 import { RuleBatch, LineHeadRule, PairRule, Two2OneRule, BlockRule } from './ext_rule';
-import { libertyZone, libertyZoneSize } from './ext_libertyzone'
+import { libertyZone, libertyZoneSize, libertyZoneSizeFacet } from './ext_libertyzone'
 import { FW, SW } from './const';
 
 const SIDES_INSERT_MAP = new Map<string, { l: string, r: string }>([
@@ -99,6 +99,13 @@ export default class MyTyping extends Plugin {
 			EditorState.transactionFilter.of(this.sidesInsertFilter),
 			EditorState.transactionFilter.of(this.continuousFullWidthCharFilter),
 			EditorView.updateListener.of(this.addLiberty),
+			keymap.of([{
+				key: "Ctrl-]",
+				run: (view: EditorView) => this.changeLibertySize(view, 5)
+			},{
+				key: "Ctrl-[",
+				run: (view: EditorView) => this.changeLibertySize(view, -5)
+			}])
 		])
 
 		this.registerEvent(this.app.metadataCache.on("changed", (_f, _d, meta) => {
@@ -116,6 +123,16 @@ export default class MyTyping extends Plugin {
 
 	onunload() { console.log('unloading my typing plugin'); }
 
+	changeLibertySize = (view: EditorView, delta: number): boolean => {
+		const size = view.state.facet(libertyZoneSizeFacet)
+		const newSize = Math.max(0, size + delta)
+		if (size != newSize) {
+			 new Notice(`Monitor size is ${newSize}`)
+			 view.dispatch({ effects: libertyZoneSize.reconfigure(libertyZoneSizeFacet.of(newSize)) })
+		}
+		return true
+	}
+
 	spotLibertyZone = ({ view, docChanged }: ViewUpdate): {from: number, to: number} => {
 		if (!docChanged) { return }
 		const state = view.state
@@ -123,7 +140,7 @@ export default class MyTyping extends Plugin {
 		if (mainSel.anchor != mainSel.head) { return } // skip range selection
 
 		const line = state.doc.lineAt(mainSel.anchor)
-		const from = Math.max(line.from, mainSel.anchor - state.facet(libertyZoneSize))
+		const from = Math.max(line.from, mainSel.anchor - state.facet(libertyZoneSizeFacet))
 		const to = mainSel.anchor
 		if (from == to) { return } // skip empty string 
 		// and special secions
