@@ -28,39 +28,6 @@ const DEFAULT_SETTINGS: MyTypingSettings = {
 	debug: true,
 }
 
-class DocChangeExtentionSpec {
-	settings: MyTypingSettings;
-	innerCount: number;
-
-	constructor(settings: MyTypingSettings) {
-		console.log("new DocChange Sepc")
-		this.settings = settings;
-		this.innerCount = 0;
-	}
-
-
-	create = (_state: EditorState): number => {
-		console.log(`create statefield with ${this.innerCount}`)
-		this.innerCount += 1
-		return 0
-	}
-
-	update = (value: number, tr: Transaction) => {
-		if (tr.docChanged && this.settings.debug) {
-			tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
-				console.log("changes", fromA, toA, fromB, toB, inserted.toJSON())
-			})
-			console.log("transaction", tr)
-		}
-
-
-		console.log("main selection", tr.selection?.main.toJSON())
-
-		return tr.docChanged ? value + 1 : value
-	}
-
-}
-
 
 export default class MyTyping extends Plugin {
 	settings: MyTypingSettings;
@@ -88,13 +55,7 @@ export default class MyTyping extends Plugin {
 			}
 		});
 
-		const spec = new DocChangeExtentionSpec(this.settings)
-		const createF = spec.create
-		console.log("active call create")
-		createF(EditorState.create())
-		const countDocChanges = StateField.define(spec)
 		this.registerEditorExtension([
-			countDocChanges,
 			libertyZone(this.spotLibertyZone),
 			EditorState.transactionFilter.of(this.sidesInsertFilter),
 			EditorState.transactionFilter.of(this.continuousFullWidthCharFilter),
@@ -124,6 +85,7 @@ export default class MyTyping extends Plugin {
 	onunload() { console.log('unloading my typing plugin'); }
 
 	changeLibertySize = (view: EditorView, delta: number): boolean => {
+		// TODO: record this change to plugin settings
 		const size = view.state.facet(libertyZoneSizeFacet)
 		const newSize = Math.max(0, size + delta)
 		if (size != newSize) {
