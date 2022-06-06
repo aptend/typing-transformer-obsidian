@@ -9,11 +9,6 @@ export let libertyZoneSize = new Compartment()
 export type spotter = (update: ViewUpdate) => {from: number, to: number};
 
 export function libertyZone(zonespotter: spotter): Extension {
-    let exts = [
-        baseTheme,
-        libertyZoneSize.of(libertyZoneSizeFacet.of(20)),
-    ]
-
     const showToLiberty = ViewPlugin.fromClass(class {
         decorations: DecorationSet
 
@@ -22,6 +17,7 @@ export function libertyZone(zonespotter: spotter): Extension {
         }
 
         update(update: ViewUpdate) {
+            
             const range = zonespotter(update)
             if (range === undefined) {
                 if (this.decorations.size) {
@@ -35,8 +31,7 @@ export function libertyZone(zonespotter: spotter): Extension {
         decorations: v => v.decorations
     })
 
-    exts.push(showToLiberty)
-    return exts
+    return [baseTheme, showToLiberty]
 }
 
 

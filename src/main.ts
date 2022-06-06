@@ -21,11 +21,13 @@ const PUNCTS = new Set<string>(" ，。：？,.:?");
 interface MyTypingSettings {
 	mySetting: string,
 	debug: boolean,
+	libertySize: number,
 }
 
 const DEFAULT_SETTINGS: MyTypingSettings = {
 	mySetting: 'default',
 	debug: true,
+	libertySize: 20,
 }
 
 
@@ -56,6 +58,7 @@ export default class MyTyping extends Plugin {
 		});
 
 		this.registerEditorExtension([
+			libertyZoneSize.of(libertyZoneSizeFacet.of(this.settings.libertySize)),
 			libertyZone(this.spotLibertyZone),
 			EditorState.transactionFilter.of(this.sidesInsertFilter),
 			EditorState.transactionFilter.of(this.continuousFullWidthCharFilter),
@@ -63,10 +66,21 @@ export default class MyTyping extends Plugin {
 			keymap.of([{
 				key: "Ctrl-]",
 				run: (view: EditorView) => this.changeLibertySize(view, 5)
-			},{
+			}, {
 				key: "Ctrl-[",
 				run: (view: EditorView) => this.changeLibertySize(view, -5)
-			}])
+			}]),
+			StateField.define({
+				create: (state): number => { return 0 },
+				update: (value, tr) => {
+					if (tr.docChanged) {
+						tr.changes.iterChanges((a,b,c,d,insert) => {
+							console.log(a,b,c,d, insert.sliceString(0))
+						})
+					}
+					return value
+				}
+			})
 		])
 
 		this.registerEvent(this.app.metadataCache.on("changed", (_f, _d, meta) => {
@@ -89,13 +103,15 @@ export default class MyTyping extends Plugin {
 		const size = view.state.facet(libertyZoneSizeFacet)
 		const newSize = Math.max(0, size + delta)
 		if (size != newSize) {
-			 new Notice(`Monitor size is ${newSize}`)
-			 view.dispatch({ effects: libertyZoneSize.reconfigure(libertyZoneSizeFacet.of(newSize)) })
+			new Notice(`Monitor size is ${newSize}`)
+			view.dispatch({ effects: libertyZoneSize.reconfigure(libertyZoneSizeFacet.of(newSize)) })
+			this.settings.libertySize = newSize
+			this.saveSettings().catch(e => new Notice("fail to save new size"))
 		}
 		return true
 	}
 
-	spotLibertyZone = ({ view, docChanged }: ViewUpdate): {from: number, to: number} => {
+	spotLibertyZone = ({ view, docChanged }: ViewUpdate): { from: number, to: number } => {
 		if (!docChanged) { return }
 		const state = view.state
 		const mainSel = state.selection.asSingle().main
@@ -109,7 +125,7 @@ export default class MyTyping extends Plugin {
 		for (const pos of this.specialSections) {
 			if (pos.start.line <= line.number && line.number <= pos.end.line) { return }
 		}
-		return {from, to}
+		return { from, to }
 	}
 
 	addLiberty = (update: ViewUpdate) => {
@@ -118,7 +134,9 @@ export default class MyTyping extends Plugin {
 		if (range === undefined || !update.selectionSet) { return }
 		const from = range.from, to = range.to
 		const toUpdate = update.view.state.doc.sliceString(from, to)
+		console.log("toUpdate", toUpdate)
 		if (PUNCTS.has(toUpdate.charAt(toUpdate.length - 1))) {
+			console.log("trigger char", toUpdate.charAt(toUpdate.length - 1))
 			const trimmed = toUpdate.trim()
 			if (trimmed === '') { return } // skip empty string
 			const lspace = toUpdate.length - toUpdate.trimStart().length
@@ -234,8 +252,9 @@ class SampleSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("Debug")
 			.setDesc("Print more log to the console")
-			.addToggle(comp =>
-				comp.onChange(async (value) => {
+			.addToggle(comp => comp
+				.setValue(this.plugin.settings.debug)
+				.onChange(async (value) => {
 					this.plugin.settings.debug = value;
 					await this.plugin.saveSettings();
 				})
