@@ -1,4 +1,4 @@
-import { App, Modal, Plugin, PluginSettingTab, Pos, Setting, Notice } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Pos, Setting, Notice } from 'obsidian';
 import { EditorState, StateField, Transaction, TransactionSpec } from '@codemirror/state';
 import { EditorView, ViewUpdate, keymap } from '@codemirror/view';
 
@@ -19,13 +19,11 @@ const SIDES_INSERT_MAP = new Map<string, { l: string, r: string }>([
 const PUNCTS = new Set<string>(" ，。：？,.:?");
 
 interface MyTypingSettings {
-	mySetting: string,
 	debug: boolean,
 	libertySize: number,
 }
 
 const DEFAULT_SETTINGS: MyTypingSettings = {
-	mySetting: 'default',
 	debug: true,
 	libertySize: 20,
 }
@@ -46,16 +44,6 @@ export default class MyTyping extends Plugin {
 		// make state machine ready
 		this.ruleBatch = new RuleBatch(new LineHeadRule(), new PairRule(), new Two2OneRule(), new BlockRule())
 		this.specialSections = []
-
-
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-sample-modal-simple',
-			name: 'Open sample modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
 
 		this.registerEditorExtension([
 			libertyZoneSize.of(libertyZoneSizeFacet.of(this.settings.libertySize)),
@@ -93,7 +81,7 @@ export default class MyTyping extends Plugin {
 		}))
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new SettingTab(this.app, this));
 	}
 
 	onunload() { console.log('unloading my typing plugin'); }
@@ -206,23 +194,7 @@ export default class MyTyping extends Plugin {
 	}
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
-
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.setText('Woah! LaLa!');
-	}
-
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
-	}
-}
-
-class SampleSettingTab extends PluginSettingTab {
+class SettingTab extends PluginSettingTab {
 	plugin: MyTyping;
 
 	constructor(app: App, plugin: MyTyping) {
@@ -236,18 +208,6 @@ class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		containerEl.createEl('h2', { text: 'Settings for my awesome plugin.' });
-
-		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					console.log('Secret: ' + value);
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
 
 		new Setting(containerEl)
 			.setName("Debug")
