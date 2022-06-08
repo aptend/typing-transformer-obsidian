@@ -1,7 +1,7 @@
 
 
 import { Facet, Extension, Compartment } from "@codemirror/state"
-import { ViewPlugin, DecorationSet, ViewUpdate, EditorView, Decoration } from "@codemirror/view"
+import { ViewPlugin, DecorationSet, ViewUpdate, EditorView, Decoration, WidgetType } from "@codemirror/view"
 
 export let libertyZoneSize = new Compartment()
 
@@ -9,7 +9,7 @@ export let libertyZoneSize = new Compartment()
 export type spotter = (update: ViewUpdate) => {from: number, to: number};
 
 export function libertyZone(zonespotter: spotter): Extension {
-    const showToLiberty = ViewPlugin.fromClass(class {
+    return ViewPlugin.fromClass(class {
         decorations: DecorationSet
 
         constructor(_: EditorView) {
@@ -25,25 +25,40 @@ export function libertyZone(zonespotter: spotter): Extension {
                 }
                 return
             }
-            this.decorations = Decoration.set([libertyZoneMark.range(range.from, range.to)])
+            this.decorations = Decoration.set(Decoration.widget({
+                widget: new MarkWidget(10),
+                side: 1,
+            }).range(range.from))
         }
     }, {
         decorations: v => v.decorations
     })
-
-    return [baseTheme, showToLiberty]
 }
-
-
-const libertyZoneMark = Decoration.mark({
-    attributes: { class: "cm-toLibertyZone" }
-})
 
 export const libertyZoneSizeFacet = Facet.define<number, number>({
     combine: values => values.length ? Math.min(...values) : 20
 })
 
-const baseTheme = EditorView.baseTheme({
-    "&light .cm-toLibertyZone": { textDecoration: "overline #DED8F0 2px" },
-    "&dark .cm-toLibertyZone": { backgroundColor: "overline #1a2727 2px" },
-})
+export class MarkWidget extends WidgetType {
+    constructor(readonly lineHeight: number) {
+        super();
+    }
+
+    toDOM() {
+        const mark = document.createElement("span");
+        mark.style.position = "relative"
+        mark.style.top = `-${this.lineHeight}px`
+        mark.innerText = "⭐️";
+
+        const wrapper = document.createElement("div");
+        wrapper.style.display = "inline-block";
+        wrapper.style.position = "absolute";
+        wrapper.append(mark);
+
+        return wrapper;
+    }
+
+    ignoreEvent() {
+        return false;
+    }
+}
