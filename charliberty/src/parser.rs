@@ -5,8 +5,6 @@ use pest::Parser;
 #[grammar = "liberty.pest"]
 pub struct LineParser;
 
-const IGNORE_MULTISPACE: bool = true;
-
 pub fn insert_liberty(line: &str) -> Result<String> {
     let mut result = String::with_capacity(line.len() * 2);
 
@@ -21,23 +19,16 @@ pub fn insert_liberty(line: &str) -> Result<String> {
     result.push_str(first.as_str());
 
     for block in blocks.into_iter().skip(1) {
-        println!("-- {:?} {:?}", prev_block_kind, block.as_rule());
-        match (prev_block_kind, block.as_rule()) {
+         match (prev_block_kind, block.as_rule()) {
             (_, Rule::EOI) => break,
-            (_, Rule::MultiSpace) => if IGNORE_MULTISPACE {
-                // squeeze multiple space out
-                continue;
-            } else {
-                // the last space will be add by next block
-                result.push_str(block.as_str())
-            },
-            (Rule::MultiSpace, _)
+            // keep MultiSpace
+            (_, Rule::MultiSpace) | (Rule::MultiSpace, _)
             // no space around FullWidth punct 
             | (_, Rule::FWPunct) | (Rule::FWPunct, _)
             // no space before punct
             | (_, Rule::Punct)
             // keep other intact
-            | (_, Rule::Other) 
+            | (_, Rule::Other) | (Rule::Other, _)
              => {
                 result.push_str(block.as_str());
             }
@@ -99,14 +90,14 @@ mod tests {
                 ("", ""),
                 (
                     "秦时moon汉时关，  万里长征人no还",
-                    "秦时 moon 汉时关，万里长征人 no 还",
-                ),
-                (
                     "秦时 moon 汉时关，  万里长征人 no 还",
-                    "秦时 moon 汉时关，万里长征人 no 还",
                 ),
                 (
-                    "秦时 moon汉时关，  万里长征人no 还",
+                    "秦时 moon 汉时关，   万里长征人 no 还",
+                    "秦时 moon 汉时关，   万里长征人 no 还",
+                ),
+                (
+                    "秦时 moon汉时关， 万里长征人no 还",
                     "秦时 moon 汉时关，万里长征人 no 还",
                 ),
                 (
@@ -127,7 +118,7 @@ mod tests {
             .cases(vec![
                 ("", ""),
                 (
-                    "```秦时`moon汉《时》关，  万里长征人$no$还",
+                    "```秦时`moon汉《时》关， 万里长征人$no$还",
                     "`` `秦时` moon 汉《时》关，万里长征人 $no$ 还",
                 ),
                 (
@@ -136,7 +127,7 @@ mod tests {
                 ),
                 (
                     "秦时 moon汉时关，  万里$长\\$征$人no 还",
-                    "秦时 moon 汉时关，万里 $长\\$征$ 人 no 还",
+                    "秦时 moon 汉时关，  万里 $长\\$征$ 人 no 还",
                 ),
             ])
             .test();
