@@ -21,7 +21,7 @@ SpecialBlock = @{
 	| ^"p.m"
 }
 
-OtherChar = _{!(MultiSpace | FWPunct | Punct) ~ ANY}
+OtherChar = _{!(MultiSpace | SpecialBlock | Punct | FWPunct | Num | Cn | Eng) ~ ANY}
 Other = {OtherChar+}
 
 Block = _{ 

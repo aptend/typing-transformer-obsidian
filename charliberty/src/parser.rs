@@ -19,7 +19,7 @@ pub fn insert_liberty(line: &str) -> Result<String> {
     result.push_str(first.as_str());
 
     for block in blocks.into_iter().skip(1) {
-         match (prev_block_kind, block.as_rule()) {
+        match (prev_block_kind, block.as_rule()) {
             (_, Rule::EOI) => break,
             // keep MultiSpace
             (_, Rule::MultiSpace) | (Rule::MultiSpace, _)
@@ -76,7 +76,7 @@ mod tests {
                     want,
                     "bad case is Group {:?} number {} case",
                     self.name,
-                    i
+                    i + 1
                 );
             }
         }
@@ -116,7 +116,6 @@ mod tests {
         Tester::new()
             .name("inline block")
             .cases(vec![
-                ("", ""),
                 (
                     "```秦时`moon汉《时》关， 万里长征人$no$还",
                     "`` `秦时` moon 汉《时》关，万里长征人 $no$ 还",
@@ -128,6 +127,23 @@ mod tests {
                 (
                     "秦时 moon汉时关，  万里$长\\$征$人no 还",
                     "秦时 moon 汉时关，  万里 $长\\$征$ 人 no 还",
+                ),
+            ])
+            .test();
+    }
+
+    #[test]
+    fn test_basic_other() {
+        Tester::new()
+            .name("other block")
+            .cases(vec![
+                (
+                    "**秦时**moon汉时关， _万里_**长**征人no 还",
+                    "**秦时**moon 汉时关，_万里_**长**征人 no 还",
+                ),
+                (
+                    "秦-时moon 汉时%关 ，  万里`长征人no 还",
+                    "秦-时 moon 汉时%关，  万里`长征人 no 还",
                 ),
             ])
             .test();
