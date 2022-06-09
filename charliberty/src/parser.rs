@@ -54,41 +54,91 @@ pub fn insert_liberty(line: &str) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
+    use crate::parser::*;
+
+    #[derive(Default)]
+    struct Tester<'a> {
+        name: &'a str,
+        cases: Vec<(&'a str, &'a str)>,
+    }
+
+    impl<'a> Tester<'a> {
+        fn new() -> Self {
+            Tester::default()
+        }
+
+        fn name(&mut self, s: &'a str) -> &mut Self {
+            self.name = s;
+            self
+        }
+
+        fn cases(&mut self, cases: Vec<(&'a str, &'a str)>) -> &mut Self {
+            self.cases = cases;
+            self
+        }
+
+        fn test(&self) {
+            for (i, (case, want)) in self.cases.iter().enumerate() {
+                let got = insert_liberty(case).unwrap();
+                assert_eq!(
+                    &got.as_str(),
+                    want,
+                    "bad case is Group {:?} number {} case",
+                    self.name,
+                    i
+                );
+            }
+        }
+    }
+
     #[test]
     fn test_basic_eng_cn() {
-        use crate::parser::*;
-
-        let cases = vec![
-            ("", ""),
-            ("秦时moon汉时关，  万里长征人no还", "秦时 moon 汉时关，万里长征人 no 还"),
-            ("秦时 moon 汉时关，  万里长征人 no 还", "秦时 moon 汉时关，万里长征人 no 还"),
-            ("秦时 moon汉时关，  万里长征人no 还", "秦时 moon 汉时关，万里长征人 no 还"),
-            ("他人笑我太疯癫,我笑他人不够high", "他人笑我太疯癫, 我笑他人不够 high"),
-            (
-                "do you know how much i like life?i had never killed myself",
-                "do you know how much i like life? i had never killed myself",
-            ),
-        ];
-
-        for (case, want) in cases {
-            let got = insert_liberty(case).unwrap();
-            assert_eq!(got, want)
-        }
+        Tester::new()
+            .name("eng_cn")
+            .cases(vec![
+                ("", ""),
+                (
+                    "秦时moon汉时关，  万里长征人no还",
+                    "秦时 moon 汉时关，万里长征人 no 还",
+                ),
+                (
+                    "秦时 moon 汉时关，  万里长征人 no 还",
+                    "秦时 moon 汉时关，万里长征人 no 还",
+                ),
+                (
+                    "秦时 moon汉时关，  万里长征人no 还",
+                    "秦时 moon 汉时关，万里长征人 no 还",
+                ),
+                (
+                    "他人笑我太疯癫,我笑他人不够high",
+                    "他人笑我太疯癫, 我笑他人不够 high",
+                ),
+                (
+                    "do you know how much i like life?i had never killed myself",
+                    "do you know how much i like life? i had never killed myself",
+                ),
+            ])
+            .test();
     }
     #[test]
     fn test_basic_inline_block() {
-        use crate::parser::*;
-
-        let cases = vec![
-            ("", ""),
-            ("```秦时`moon汉《时》关，  万里长征人$no$还", "`` `秦时` moon 汉《时》关，万里长征人 $no$ 还"),
-            ("秦时moon 汉时`关，  万里`长征人 no 还", "秦时 moon 汉时 `关，  万里` 长征人 no 还"),
-            ("秦时 moon汉时关，  万里$长\\$征$人no 还", "秦时 moon 汉时关，万里 $长\\$征$ 人 no 还"),
-        ];
-
-        for (case, want) in cases {
-            let got = insert_liberty(case).unwrap();
-            assert_eq!(got, want)
-        }
+        Tester::new()
+            .name("inline block")
+            .cases(vec![
+                ("", ""),
+                (
+                    "```秦时`moon汉《时》关，  万里长征人$no$还",
+                    "`` `秦时` moon 汉《时》关，万里长征人 $no$ 还",
+                ),
+                (
+                    "秦时moon 汉时`关，  万里`长征人 no 还",
+                    "秦时 moon 汉时 `关，  万里` 长征人 no 还",
+                ),
+                (
+                    "秦时 moon汉时关，  万里$长\\$征$人no 还",
+                    "秦时 moon 汉时关，万里 $长\\$征$ 人 no 还",
+                ),
+            ])
+            .test();
     }
 }
