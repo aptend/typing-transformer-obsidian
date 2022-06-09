@@ -6,6 +6,7 @@ liberty-js = $(liberty-dst)/charliberty.js
 
 $(liberty-js): $(liberty-src)
 	wasm-pack build charliberty -t web -d ../$(liberty-dst)
+	node ./scripts/wasm_post.js
 
 
 .PHONY: wasm build dev
