@@ -6,6 +6,10 @@ use pest::Parser;
 pub struct LineParser;
 
 pub fn insert_liberty(line: &str) -> Result<String> {
+    insert_liberty_inner(line, false)
+}
+
+fn insert_liberty_inner(line: &str, debug: bool) -> Result<String> {
     let mut result = String::with_capacity(line.len() * 2);
 
     let pairs = LineParser::parse(Rule::Line, line)?;
@@ -18,7 +22,15 @@ pub fn insert_liberty(line: &str) -> Result<String> {
     let mut prev_block_kind = first.as_rule();
     result.push_str(first.as_str());
 
+    if debug {
+        println!("-- {:?}", prev_block_kind);
+    }
+
     for block in blocks.into_iter().skip(1) {
+        if debug {
+            println!("-- {:?}", block);
+        }
+
         match (prev_block_kind, block.as_rule()) {
             (_, Rule::EOI) => break,
             // keep MultiSpace
@@ -45,12 +57,14 @@ pub fn insert_liberty(line: &str) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Range;
     use crate::parser::*;
 
     #[derive(Default)]
     struct Tester<'a> {
         name: &'a str,
         cases: Vec<(&'a str, &'a str)>,
+        picked_range: Option<Range<usize>>,
     }
 
     impl<'a> Tester<'a> {
@@ -68,15 +82,33 @@ mod tests {
             self
         }
 
+        #[allow(unused)]
+        fn pick_one_for_debug(&mut self, pick: usize) -> &mut Self {
+            if pick >= self.cases.len() {
+                panic!("pick out of range")
+            }
+            self.picked_range = Some(pick..pick + 1);
+            self
+        }
+
         fn test(&self) {
-            for (i, (case, want)) in self.cases.iter().enumerate() {
-                let got = insert_liberty(case).unwrap();
+            if let Some(range) = &self.picked_range {
+                self.test_range(range.clone(), true)
+            } else {
+                self.test_range(0..self.cases.len(), false)
+            }
+        }
+
+        fn test_range(&self, range: Range<usize>, debug: bool) {
+            let start = range.start;
+            for (i, (case, want)) in self.cases[range].iter().enumerate() {
+                let got = insert_liberty_inner(case, debug).unwrap();
                 assert_eq!(
                     &got.as_str(),
                     want,
                     "bad case is Group {:?} number {} case",
                     self.name,
-                    i + 1
+                    i + 1 +  start
                 );
             }
         }
