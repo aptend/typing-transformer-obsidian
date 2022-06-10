@@ -14,9 +14,14 @@ InlineCode = @{"`" ~ inlineCodeChar* ~ "`"}
 inlineMathChar = _{"\\$" | !"$" ~ ANY}
 InlineMath = @{"$" ~ inlineMathChar* ~ "$"}
 
+emphasisMark = { "*"+ |  "_"+ }
+inlineEmChar = _{!PEEK ~ ANY}
+InlineEm = @{PUSH(emphasisMark) ~ inlineEmChar* ~ POP}
+
 SpecialBlock = @{
 	InlineCode
 	| InlineMath
+	| InlineEm
 	| ^"a.m"
 	| ^"p.m"
 }

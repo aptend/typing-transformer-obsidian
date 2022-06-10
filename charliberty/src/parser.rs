@@ -23,7 +23,7 @@ fn insert_liberty_inner(line: &str, debug: bool) -> Result<String> {
     result.push_str(first.as_str());
 
     if debug {
-        println!("-- {:?}", prev_block_kind);
+        println!("-- {:?}", first);
     }
 
     for block in blocks.into_iter().skip(1) {
@@ -57,8 +57,8 @@ fn insert_liberty_inner(line: &str, debug: bool) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Range;
     use crate::parser::*;
+    use std::ops::Range;
 
     #[derive(Default)]
     struct Tester<'a> {
@@ -83,11 +83,12 @@ mod tests {
         }
 
         #[allow(unused)]
+        // pick is 1-based offset
         fn pick_one_for_debug(&mut self, pick: usize) -> &mut Self {
-            if pick >= self.cases.len() {
+            if pick > self.cases.len() || pick < 1 {
                 panic!("pick out of range")
             }
-            self.picked_range = Some(pick..pick + 1);
+            self.picked_range = Some(pick - 1..pick);
             self
         }
 
@@ -108,7 +109,7 @@ mod tests {
                     want,
                     "bad case is Group {:?} number {} case",
                     self.name,
-                    i + 1 +  start
+                    i + 1 + start
                 );
             }
         }
@@ -159,6 +160,10 @@ mod tests {
                 (
                     "秦时 moon汉时关，  万里$长\\$征$人no 还",
                     "秦时 moon 汉时关，  万里 $长\\$征$ 人 no 还",
+                ),
+                (
+                    "**秦**时moon汉时关，万里___长*_*征___ 人no 还",
+                    "**秦** 时 moon 汉时关，万里 ___长*_*征___ 人 no 还",
                 ),
             ])
             .test();
