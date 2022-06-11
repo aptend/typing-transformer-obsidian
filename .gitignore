@@ -22,3 +22,5 @@ data.json
 
 # tmp file
 .env
+
+build
