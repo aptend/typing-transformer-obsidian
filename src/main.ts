@@ -5,9 +5,10 @@ import { EditorView, ViewUpdate, keymap } from '@codemirror/view';
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm'
 import init, { formatLine } from '../liberty-web/charliberty'
 
-import { RuleBatch, LineHeadRule, PairRule, Two2OneRule, BlockRule } from './ext_rule';
 import { libertyZone, libertyZoneSize, libertyZoneSizeFacet } from './ext_libertyzone'
 import { FW, SW } from './const';
+
+import { Rules } from './ext_convert';
 
 const SIDES_INSERT_MAP = new Map<string, { l: string, r: string }>([
 	[FW.DOT, { l: SW.DOT, r: SW.DOT }],
@@ -17,6 +18,27 @@ const SIDES_INSERT_MAP = new Map<string, { l: string, r: string }>([
 ]);
 
 const PUNCTS = new Set<string>(" ，。：？,.:?");
+
+const DEFAULT_RULES = [
+	"# line head",
+	"'\n》¦' -> '\n>¦'",
+	"'\n、¦' -> '\n/¦'",
+	"# Two2one",
+	"'。。¦' -> '.¦'",
+	"'》》¦' -> '>¦'",
+	"'、、¦' -> '/¦'",
+	"# auto pair and conver",
+	"'《《¦》' -> '<¦' # this take higer priority",
+	"'《¦' -> '《¦》'",
+	"'（（¦）' -> '(¦)'",
+	"'（¦' -> '（¦）'",
+	"# auto block",
+	"'··¦' -> '`¦`' # inline block",
+	"'`·¦`' -> '```¦\n```'",
+	"# have fun converting!",
+	"'11111-¦' -> 'have a nice day!¦'",
+]
+
 
 interface MyTypingSettings {
 	debug: boolean,
@@ -31,8 +53,8 @@ const DEFAULT_SETTINGS: MyTypingSettings = {
 
 export default class MyTyping extends Plugin {
 	settings: MyTypingSettings;
-	ruleBatch: RuleBatch;
 	specialSections: Pos[];
+	rules: Rules
 
 	async onload() {
 		console.log('loading my typing plugin');
@@ -41,8 +63,9 @@ export default class MyTyping extends Plugin {
 		// make wasm ready
 		await init(wasmbin)
 
-		// make state machine ready
-		this.ruleBatch = new RuleBatch(new LineHeadRule(), new PairRule(), new Two2OneRule(), new BlockRule())
+		this.rules = new Rules(DEFAULT_RULES.join('\n'))
+		if (this.rules.errors.length > 0) new Notice(this.rules.errors.join('\n'))
+
 		this.specialSections = []
 
 		this.registerEditorExtension([
@@ -135,28 +158,22 @@ export default class MyTyping extends Plugin {
 
 	continuousFullWidthCharFilter = (tr: Transaction): TransactionSpec | readonly TransactionSpec[] => {
 		if (!tr.docChanged) { return tr }
-		let shouldHijack = true
+		let shouldHijack = true // Hijack when some rules match all changes
 		const changes: TransactionSpec[] = []
 		tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
+			const { trigSet, lmax, rmax } = this.rules
 			const char = inserted.sliceString(0)
-			if (!shouldHijack || fromA != toA || toB != fromB + 1 || !FW.CONTIN_CHARS_SET.has(char)) {
+			if (!shouldHijack || fromA != toA || toB != fromB + 1 || !trigSet.has(char)) {
 				shouldHijack = false
 				return
 			}
 
-			const prevChar = tr.startState.doc.sliceString(fromB - 1, fromB)
-			const nextChar = tr.startState.doc.sliceString(fromB, fromB + 1)
-			console.log(`prev: '${prevChar}', next: '${nextChar}'`)
+			const input = tr.startState.doc.sliceString(fromB - lmax, fromB + rmax)
+			console.log("---- ", input)
 
-			const rules = this.ruleBatch
-
-			rules.reset()
-			rules.next(prevChar)
-			rules.next(char)
-			rules.next(nextChar)
-
-			if (rules.hasResult) {
-				changes.push(...rules.resultSpecs(fromB))
+			const rule = this.rules.match(input, char, lmax)
+			if (rule != null) {
+				changes.push(rule.mapToChanges(fromB))
 			} else {
 				shouldHijack = false
 			}
