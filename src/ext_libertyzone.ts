@@ -1,9 +1,8 @@
 
 
-import { Facet, Extension, Compartment } from "@codemirror/state"
+import { Extension } from "@codemirror/state"
 import { ViewPlugin, DecorationSet, ViewUpdate, EditorView, Decoration, WidgetType } from "@codemirror/view"
 
-export let libertyZoneSize = new Compartment()
 
 // why spotter? because we need the plugin to provide special sections
 export type spotter = (update: ViewUpdate) => {from: number, to: number};
@@ -17,7 +16,6 @@ export function libertyZone(zonespotter: spotter): Extension {
         }
 
         update(update: ViewUpdate) {
-            
             const range = zonespotter(update)
             if (range === undefined) {
                 if (this.decorations.size) {
@@ -26,7 +24,7 @@ export function libertyZone(zonespotter: spotter): Extension {
                 return
             }
             this.decorations = Decoration.set(Decoration.widget({
-                widget: new MarkWidget(10),
+                widget: new MarkWidget(15),
                 side: 1,
             }).range(range.from))
         }
@@ -34,10 +32,6 @@ export function libertyZone(zonespotter: spotter): Extension {
         decorations: v => v.decorations
     })
 }
-
-export const libertyZoneSizeFacet = Facet.define<number, number>({
-    combine: values => values.length ? Math.min(...values) : 20
-})
 
 export class MarkWidget extends WidgetType {
     constructor(readonly lineHeight: number) {
