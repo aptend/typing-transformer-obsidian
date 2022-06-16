@@ -5,7 +5,7 @@ import { EditorView, ViewUpdate, keymap } from '@codemirror/view';
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm'
 import init, { formatLine } from '../liberty-web/charliberty'
 
-import { libertyZone, libertyZoneSize, libertyZoneSizeFacet } from './ext_libertyzone'
+import { libertyZone } from './ext_libertyzone'
 import { FW, SW } from './const';
 
 import { Rules } from './ext_convert';
@@ -42,12 +42,10 @@ const DEFAULT_RULES = [
 
 interface MyTypingSettings {
 	debug: boolean,
-	libertySize: number,
 }
 
 const DEFAULT_SETTINGS: MyTypingSettings = {
 	debug: true,
-	libertySize: 20,
 }
 
 
@@ -69,18 +67,10 @@ export default class MyTyping extends Plugin {
 		this.specialSections = []
 
 		this.registerEditorExtension([
-			libertyZoneSize.of(libertyZoneSizeFacet.of(this.settings.libertySize)),
 			libertyZone(this.spotLibertyZone),
 			EditorState.transactionFilter.of(this.sidesInsertFilter),
 			EditorState.transactionFilter.of(this.continuousFullWidthCharFilter),
 			EditorView.updateListener.of(this.addLiberty),
-			keymap.of([{
-				key: "Ctrl-]",
-				run: (view: EditorView) => this.changeLibertySize(view, 5)
-			}, {
-				key: "Ctrl-[",
-				run: (view: EditorView) => this.changeLibertySize(view, -5)
-			}]),
 			StateField.define({
 				create: (state): number => { return 0 },
 				update: (value, tr) => {
@@ -109,19 +99,6 @@ export default class MyTyping extends Plugin {
 
 	onunload() { console.log('unloading my typing plugin'); }
 
-	changeLibertySize = (view: EditorView, delta: number): boolean => {
-		// TODO: record this change to plugin settings
-		const size = view.state.facet(libertyZoneSizeFacet)
-		const newSize = Math.max(0, size + delta)
-		if (size != newSize) {
-			new Notice(`Monitor size is ${newSize}`)
-			view.dispatch({ effects: libertyZoneSize.reconfigure(libertyZoneSizeFacet.of(newSize)) })
-			this.settings.libertySize = newSize
-			this.saveSettings().catch(e => new Notice("fail to save new size"))
-		}
-		return true
-	}
-
 	spotLibertyZone = ({ view, docChanged }: ViewUpdate): { from: number, to: number } => {
 		if (!docChanged) { return }
 		const state = view.state
@@ -129,13 +106,25 @@ export default class MyTyping extends Plugin {
 		if (mainSel.anchor != mainSel.head) { return } // skip range selection
 
 		const line = state.doc.lineAt(mainSel.anchor)
-		const from = Math.max(line.from, mainSel.anchor - state.facet(libertyZoneSizeFacet))
+		const from = line.from
 		const to = mainSel.anchor
 		if (from == to) { return } // skip empty string 
 		// and special secions
 		for (const pos of this.specialSections) {
 			if (pos.start.line <= line.number && line.number <= pos.end.line) { return }
 		}
+
+		const txt = state.doc.sliceString(from, to)
+
+		let inblock = false
+		for (let i = txt.length - 2; i > 0; i--) {
+			const ch = txt[i]
+			if (ch === '`') { inblock = !inblock }
+			if (!inblock && ch != ' ' && PUNCTS.has(ch)) {
+				return {from: from + i, to}
+			}
+		}
+
 		return { from, to }
 	}
 
