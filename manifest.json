@@ -1,9 +1,9 @@
 {
-	"id": "my-typing",
-	"name": "Typing Flatter",
+	"id": "typing-transformer-obsidian",
+	"name": "Typing Transformer",
 	"version": "0.0.1",
 	"minAppVersion": "0.13.8",
-	"description": "This is a plugin making typing easier",
+	"description": "Improved, configurable auto formatting as typing",
 	"author": "aptend",
 	"authorUrl": "https://github.com/aptend",
 	"isDesktopOnly": false
