@@ -9,6 +9,49 @@ pub fn insert_liberty(line: &str) -> Result<String> {
     insert_liberty_inner(line, false)
 }
 
+pub fn block_ranges(line: &str, cursor_pos: usize) -> Vec<usize> {
+    let total = line.chars().count();
+    let cursor_offset = line
+        .char_indices()
+        .nth(cursor_pos)
+        .map(|(idx, _)| idx)
+        .unwrap_or(line.len());
+
+    let mut chars = line.char_indices().enumerate();
+
+    let mut map_to_char_idx = |u8_offset: usize| -> usize {
+        for (nth, (idx, _)) in chars.by_ref() {
+            if idx == u8_offset {
+                return nth;
+            }
+            if idx > u8_offset {
+                break;
+            }
+        }
+        total
+    };
+
+    let mut res = vec![];
+    if let Ok(pairs) = LineParser::parse(Rule::Line, line) {
+        let blocks = pairs.into_iter().next().unwrap().into_inner();
+        for block in blocks {
+            let span = block.as_span();
+            if cursor_offset <= span.start() {
+                break;
+            }
+            if block.as_rule() == Rule::SpecialBlock {
+                block.into_inner().next().map(|inner| {
+                    if matches!(inner.as_rule(), Rule::InlineCode | Rule::InlineMath) {
+                        res.push(map_to_char_idx(span.start()));
+                        res.push(map_to_char_idx(span.end()) - 1);
+                    }
+                });
+            }
+        }
+    }
+    res
+}
+
 fn insert_liberty_inner(line: &str, debug: bool) -> Result<String> {
     let mut result = String::with_capacity(line.len() * 2);
 
@@ -59,6 +102,15 @@ fn insert_liberty_inner(line: &str, debug: bool) -> Result<String> {
 mod tests {
     use crate::parser::*;
     use std::ops::Range;
+    #[test]
+    fn test_is_in_block() {
+        let text = "起点 `终` at `12` a.m. ignore `another block`";
+        assert_eq!(block_ranges(text, 3), []);
+        assert_eq!(block_ranges(text, 4), [3, 5]); // before 终
+        assert_eq!(block_ranges(text, 11), [3, 5, 10, 13]); // before 12
+        assert_eq!(block_ranges(text, 100), [3, 5, 10, 13, 27, 41]);
+        assert_eq!(block_ranges("`新的曙光.mz` 我的朋友`觉.z`", 20), [0, 8, 14, 18]);
+    }
 
     #[derive(Default)]
     struct Tester<'a> {
@@ -176,7 +228,7 @@ mod tests {
             .cases(vec![
                 (
                     "**秦时**moon汉时关， _万里_**长**征人no 还",
-                    "**秦时**moon 汉时关，_万里_**长**征人 no 还",
+                    "**秦时** moon 汉时关，_万里_ **长** 征人 no 还",
                 ),
                 (
                     "秦-时moon 汉时%关 ，  万里`长征人no 还",
