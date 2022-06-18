@@ -1,6 +1,6 @@
-import { App, Plugin, PluginSettingTab, Pos, Setting, Notice } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Pos, Setting, TextAreaComponent, ButtonComponent } from 'obsidian';
 import { EditorState, StateField, Transaction, TransactionSpec } from '@codemirror/state';
-import { EditorView, ViewUpdate, keymap } from '@codemirror/view';
+import { EditorView, ViewUpdate } from '@codemirror/view';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm'
 import init, { formatLine } from '../liberty-web/charliberty'
@@ -19,40 +19,46 @@ const SIDES_INSERT_MAP = new Map<string, { l: string, r: string }>([
 
 const PUNCTS = new Set<string>(" ，。：？,.:?");
 
-const DEFAULT_RULES = [
-	"# line head",
-	"'\n》¦' -> '\n>¦'",
-	"'\n、¦' -> '\n/¦'",
-	"# Two2one",
-	"'。。¦' -> '.¦'",
-	"'》》¦' -> '>¦'",
-	"'、、¦' -> '/¦'",
-	"# auto pair and conver",
-	"'《《¦》' -> '<¦' # this take higer priority",
-	"'《¦' -> '《¦》'",
-	"'（（¦）' -> '(¦)'",
-	"'（¦' -> '（¦）'",
-	"# auto block",
-	"'··¦' -> '`¦`' # inline block",
-	"'`·¦`' -> '```¦\n```'",
-	"# have fun converting!",
-	"'11111-¦' -> 'have a nice day!¦'",
-]
+const DEFAULT_RULES = String.raw`# Rules
+# line head
+'\n》¦' -> '\n>¦'
+'\n、¦' -> '\n/¦'
 
+# Two2one
+'。。¦' -> '.¦'
+'》》¦' -> '>¦'
+'、、¦' -> '/¦'
+
+# auto pair and conver
+'《《¦》' -> '<¦' # this take higer priority
+'《¦' -> '《¦》'
+'（（¦）' -> '(¦)'
+'（¦' -> '（¦）'
+
+# auto block
+'··¦' -> '\`¦\`' # inline block
+'\`·¦\`' -> '\`\`\`¦\n\`\`\`'
+
+# have fun converting!
+# 'hv1111¦' -> 'have a nice day!¦'
+`.replaceAll("\\`", "`")
 
 interface TypingTransformerSettings {
 	debug: boolean,
+	convertRules: string,
 }
 
 const DEFAULT_SETTINGS: TypingTransformerSettings = {
 	debug: true,
+	convertRules: DEFAULT_RULES,
 }
 
 
 export default class TypingTransformer extends Plugin {
 	settings: TypingTransformerSettings;
 	specialSections: Pos[];
-	rules: Rules
+	rules: Rules;
+	rulesErr: string;
 
 	async onload() {
 		console.log('loading my typing plugin');
@@ -61,8 +67,7 @@ export default class TypingTransformer extends Plugin {
 		// make wasm ready
 		await init(wasmbin)
 
-		this.rules = new Rules(DEFAULT_RULES.join('\n'))
-		if (this.rules.errors.length > 0) new Notice(this.rules.errors.join('\n'))
+		this.configureRules(this.settings.convertRules)
 
 		this.specialSections = []
 
@@ -98,6 +103,15 @@ export default class TypingTransformer extends Plugin {
 	}
 
 	onunload() { console.log('unloading my typing plugin'); }
+
+	configureRules = (ruleString: string) => {
+		this.rules = new Rules(ruleString)
+		if (this.rules.errors.length > 0) {
+			this.rulesErr = this.rules.errors.join('\n')
+		} else {
+			this.rulesErr = ""
+		}
+	}
 
 	spotLibertyZone = ({ view, docChanged }: ViewUpdate): { from: number, to: number } => {
 		if (!docChanged) { return }
@@ -209,21 +223,54 @@ class SettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
-		const { containerEl } = this;
-
+		const { containerEl, plugin } = this;
 		containerEl.empty();
-
-		containerEl.createEl('h2', { text: 'Settings for Typing Transformer.' });
 
 		new Setting(containerEl)
 			.setName("Debug")
 			.setDesc("Print more log to the console")
 			.addToggle(comp => comp
-				.setValue(this.plugin.settings.debug)
+				.setValue(plugin.settings.debug)
 				.onChange(async (value) => {
-					this.plugin.settings.debug = value;
-					await this.plugin.saveSettings();
+					plugin.settings.debug = value;
+					await plugin.saveSettings();
 				})
 			)
+		
+		const ruleArea = new Setting(containerEl)
+		ruleArea.settingEl.setAttribute("style", "display: grid; grid-template-columns: 1fr;")
+		ruleArea.setName("Converting rules")
+				.setDesc("one line for one rule and rules that come first have higher priority")
+		
+		const ruleInput = new TextAreaComponent(ruleArea.controlEl)
+		ruleInput.inputEl.setAttribute("style", "margin-top: 12px; width: 100%;  height: 30vh; font-family: 'Source Code Pro', monospace;")
+		ruleInput.setValue(plugin.settings.convertRules)
+			
+		const ruleControl = containerEl.createDiv("ruleCtrl")
+		ruleControl.setAttr("display", "flex")
+
+		const feedRules = async (newRule: string) => {
+			plugin.settings.convertRules = newRule
+			plugin.configureRules(newRule)
+			if (plugin.rulesErr != "") {
+				ruleHint.setText(plugin.rulesErr)
+			} else {
+				ruleHint.setText("Ready to parse!")
+				await this.plugin.saveSettings()
+			}
+		}
+
+		new ButtonComponent(ruleControl)
+			.setTooltip("apply these rules")
+			.setButtonText('Apply')
+			.onClick(_ => feedRules(ruleInput.getValue()))
+
+		const ruleHint = ruleControl.createEl("a", { text: plugin.rulesErr })
+
+		new ButtonComponent(ruleControl)
+			.setTooltip("reset default rules")
+			.setButtonText('Reset')
+			.onClick(_ => { ruleInput.setValue(DEFAULT_RULES); feedRules(DEFAULT_RULES) })
+			.buttonEl.setAttribute('style', 'float: right;')
 	}
 }
