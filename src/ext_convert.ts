@@ -244,7 +244,8 @@ export class Rules {
     lmax: number
     rmax: number
     constructor(ruletxt: string) {
-        const parser = new RuleParser(ruletxt)
+        const unescapedTxt = ruletxt.replaceAll("\\n", "\n")
+        const parser = new RuleParser(unescapedTxt)
         parser.parse()
         this.rules = []
         this.trigSet = new Set<string>()
