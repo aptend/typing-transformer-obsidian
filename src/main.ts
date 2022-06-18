@@ -33,12 +33,12 @@ const DEFAULT_RULES = String.raw`# Rules
 
 # auto pair and conver
 '《《¦》' -> '<¦' # this take higer priority
-'《¦' -> '《¦》'
+'《¦'     -> '《¦》'
 '（（¦）' -> '(¦)'
-'（¦' -> '（¦）'
+'（¦'     -> '（¦）'
 
 # auto block
-'··¦' -> '\`¦\`' # inline block
+'··¦'  -> '\`¦\`' # inline block
 '\`·¦\`' -> '\`\`\`¦\n\`\`\`'
 
 # have fun converting!

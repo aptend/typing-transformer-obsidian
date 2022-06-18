@@ -2,7 +2,7 @@
 
 ## Typing Transformer in Obsidian
 
-Typing Transformer is inspired by [Easy Typing](https://github. com/Yaozhuwa/easy-typing-obsidian) 启发, thanks to Easy Typing!
+Typing Transformer is inspired by [Easy Typing](https://github.com/Yaozhuwa/easy-typing-obsidian), thanks to Easy Typing!
 
 Typing Transofrmer has cleaner internal rules, more flexible configuration and allows users to have a customized auto-formatting experience as typing
 
