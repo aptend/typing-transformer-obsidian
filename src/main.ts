@@ -40,17 +40,17 @@ const DEFAULT_RULES = [
 ]
 
 
-interface MyTypingSettings {
+interface TypingTransformerSettings {
 	debug: boolean,
 }
 
-const DEFAULT_SETTINGS: MyTypingSettings = {
+const DEFAULT_SETTINGS: TypingTransformerSettings = {
 	debug: true,
 }
 
 
-export default class MyTyping extends Plugin {
-	settings: MyTypingSettings;
+export default class TypingTransformer extends Plugin {
+	settings: TypingTransformerSettings;
 	specialSections: Pos[];
 	rules: Rules
 
@@ -201,9 +201,9 @@ export default class MyTyping extends Plugin {
 }
 
 class SettingTab extends PluginSettingTab {
-	plugin: MyTyping;
+	plugin: TypingTransformer;
 
-	constructor(app: App, plugin: MyTyping) {
+	constructor(app: App, plugin: TypingTransformer) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -213,7 +213,7 @@ class SettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'Settings for my awesome plugin.' });
+		containerEl.createEl('h2', { text: 'Settings for Typing Transformer.' });
 
 		new Setting(containerEl)
 			.setName("Debug")
