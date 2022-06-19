@@ -3,7 +3,7 @@ import { EditorState, StateField, Transaction, TransactionSpec } from '@codemirr
 import { EditorView, ViewUpdate } from '@codemirror/view';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm'
-import init, { formatLine } from '../liberty-web/charliberty'
+import init, { formatLine, getBlockRanges } from '../liberty-web/charliberty'
 
 import { libertyZone } from './ext_libertyzone'
 import { FW, SW } from './const';
@@ -81,9 +81,9 @@ export default class TypingTransformer extends Plugin {
 			StateField.define({
 				create: (state): number => { return 0 },
 				update: (value, tr) => {
-					if (tr.docChanged) {
-						tr.changes.iterChanges((a,b,c,d,insert) => {
-							console.log(a,b,c,d, insert.sliceString(0))
+					if (tr.docChanged && this.settings.debug) {
+						tr.changes.iterChanges((a, b, c, d, insert) => {
+							console.log(a, b, c, d, insert.sliceString(0))
 						})
 					}
 					return value
@@ -124,20 +124,34 @@ export default class TypingTransformer extends Plugin {
 		const line = state.doc.lineAt(mainSel.anchor)
 		const from = line.from
 		const to = mainSel.anchor
-		if (from == to) { return } // skip empty string 
-		// and special secions
-		for (const pos of this.specialSections) {
+		if (from == to) { return } // skip empty string and... 
+		for (const pos of this.specialSections) { // ... special secions and ..
 			if (pos.start.line <= line.number && line.number <= pos.end.line) { return }
 		}
 
+		const blockRanges = getBlockRanges(line.text, to - from)
+
+		const isInBlock = (offset: number): boolean => {
+			for (let i = blockRanges.length - 2; i > -1; i -= 2) {
+				// a cursor at `offset`, is at the left side of `offset`-th char, so left-opend right-close here
+				if (blockRanges[i] < offset && offset <= blockRanges[i + 1]) return true
+			}
+			return false
+		}
+
+
+		if (isInBlock(to - from)) { return } // ...skip inblock
+
 		const txt = state.doc.sliceString(from, to)
 
-		let inblock = false
+		console.log('------', line.text, blockRanges, to - from)
+
+
+		// -2 to skip trailing punct, if any
 		for (let i = txt.length - 2; i > 0; i--) {
 			const ch = txt[i]
-			if (ch === '`') { inblock = !inblock }
-			if (!inblock && ch != ' ' && PUNCTS.has(ch)) {
-				return {from: from + i, to}
+			if (ch != ' ' && PUNCTS.has(ch) && !isInBlock(i)) {
+				return { from: from + i, to }
 			}
 		}
 
@@ -150,8 +164,8 @@ export default class TypingTransformer extends Plugin {
 		if (range === undefined || !update.selectionSet) { return }
 		const from = range.from, to = range.to
 		const toUpdate = update.view.state.doc.sliceString(from, to)
-		console.log("toUpdate", toUpdate)
 		if (PUNCTS.has(toUpdate.charAt(toUpdate.length - 1))) {
+			console.log("toUpdate", toUpdate)
 			console.log("trigger char", toUpdate.charAt(toUpdate.length - 1))
 			const trimmed = toUpdate.trim()
 			if (trimmed === '') { return } // skip empty string
@@ -238,16 +252,16 @@ class SettingTab extends PluginSettingTab {
 					await plugin.saveSettings();
 				})
 			)
-		
+
 		const ruleArea = new Setting(containerEl)
 		ruleArea.settingEl.setAttribute("style", "display: grid; grid-template-columns: 1fr;")
 		ruleArea.setName("Converting rules")
-				.setDesc("one line for one rule and rules that come first have higher priority")
-		
+			.setDesc("one line for one rule and rules that come first have higher priority")
+
 		const ruleInput = new TextAreaComponent(ruleArea.controlEl)
 		ruleInput.inputEl.setAttribute("style", "margin-top: 12px; width: 100%;  height: 30vh; font-family: 'Source Code Pro', monospace;")
 		ruleInput.setValue(plugin.settings.convertRules)
-			
+
 		const ruleControl = containerEl.createDiv("ruleCtrl")
 		ruleControl.setAttr("display", "flex")
 

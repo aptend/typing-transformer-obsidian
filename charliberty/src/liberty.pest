@@ -18,7 +18,7 @@ emphasisMark = { "*"+ |  "_"+ }
 inlineEmChar = _{!PEEK ~ ANY}
 InlineEm = @{PUSH(emphasisMark) ~ inlineEmChar* ~ POP}
 
-SpecialBlock = @{
+SpecialBlock = {
 	InlineCode
 	| InlineMath
 	| InlineEm
