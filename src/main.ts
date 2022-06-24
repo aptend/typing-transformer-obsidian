@@ -126,7 +126,8 @@ export default class TypingTransformer extends Plugin {
 		const to = mainSel.anchor
 		if (from == to) { return } // skip empty string and... 
 		for (const pos of this.specialSections) { // ... special secions and ..
-			if (pos.start.line <= line.number && line.number <= pos.end.line) { return }
+			// pos.start.line is 0-based while line.number is 1-based
+			if (pos.start.line <= line.number-1 && line.number-1 <= pos.end.line) { return }
 		}
 
 		const blockRanges = getBlockRanges(line.text, to - from)
@@ -138,7 +139,6 @@ export default class TypingTransformer extends Plugin {
 			}
 			return false
 		}
-
 
 		if (isInBlock(to - from)) { return } // ...skip inblock
 
