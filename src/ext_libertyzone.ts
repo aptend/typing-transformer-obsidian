@@ -2,32 +2,47 @@
 
 import { Extension } from "@codemirror/state"
 import { ViewPlugin, DecorationSet, ViewUpdate, EditorView, Decoration, WidgetType } from "@codemirror/view"
-
+import { runInThisContext } from "vm";
 
 // why spotter? because we need the plugin to provide special sections
-export type spotter = (update: ViewUpdate) => {from: number, to: number};
+export type spotter = (update: ViewUpdate) => { from: number, to: number };
 
 export function libertyZone(zonespotter: spotter): Extension {
     return ViewPlugin.fromClass(class {
         decorations: DecorationSet
+        cleanTimer: number
 
         constructor(_: EditorView) {
             this.decorations = Decoration.none
+            this.cleanTimer = -1
+        }
+
+        get isTimerActive(): boolean { return this.cleanTimer >= 0 }
+
+        tryRemoveTimer() {
+            if (this.isTimerActive) {
+                window.clearTimeout(this.cleanTimer)
+                this.cleanTimer = -1
+            }
         }
 
         update(update: ViewUpdate) {
             const range = zonespotter(update)
             // see issue https://github.com/aptend/typing-transformer-obsidian/issues/18
             if (range === undefined || update.state.doc.lineAt(range.from).from == range.from) {
-                if (this.decorations.size) {
-                    this.decorations = Decoration.none
-                }
+                this.tryRemoveTimer()
+                this.cleanTimer = window.setTimeout(() => {
+                    if (this.decorations.size) {
+                        this.decorations = Decoration.none
+                    }
+                }, 1000 /* 1 second */)
                 return
             }
             this.decorations = Decoration.set(Decoration.widget({
                 widget: new MarkWidget(15),
                 side: 1,
             }).range(range.from))
+            this.tryRemoveTimer()
         }
     }, {
         decorations: v => v.decorations
