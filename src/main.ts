@@ -4,11 +4,10 @@ import { EditorView, ViewUpdate } from '@codemirror/view';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm'
 import init, { formatLine, getBlockRanges } from '../liberty-web/charliberty'
-
-import { libertyZone } from './ext_libertyzone'
 import { FW, SW } from './const';
-
+import { initLog, log } from './utils';
 import { Rules } from './ext_convert';
+import { libertyZone } from './ext_libertyzone'
 
 const SIDES_INSERT_MAP = new Map<string, { l: string, r: string }>([
 	[FW.DOT, { l: SW.DOT, r: SW.DOT }],
@@ -65,6 +64,7 @@ export default class TypingTransformer extends Plugin {
 	async onload() {
 		console.log('loading my typing plugin');
 		await this.loadSettings();
+		initLog(this.settings)
 
 		// make wasm ready
 		await init(wasmbin)
@@ -144,9 +144,6 @@ export default class TypingTransformer extends Plugin {
 
 		const txt = state.doc.sliceString(from, to)
 
-		console.log('------', line.text, blockRanges, to - from)
-
-
 		// -2 to skip trailing punct, if any
 		for (let i = txt.length - 2; i > 0; i--) {
 			const ch = txt[i]
@@ -165,12 +162,12 @@ export default class TypingTransformer extends Plugin {
 		const from = range.from, to = range.to
 		const toUpdate = update.view.state.doc.sliceString(from, to)
 		if (PUNCTS.has(toUpdate.charAt(toUpdate.length - 1))) {
-			console.log("toUpdate", toUpdate)
-			console.log("trigger char", toUpdate.charAt(toUpdate.length - 1))
 			const trimmed = toUpdate.trim()
 			if (trimmed === '') { return } // skip empty string
 			const lspace = toUpdate.length - toUpdate.trimStart().length
 			const rspace = toUpdate.length - toUpdate.trimEnd().length
+			log("toUpdate: %s, lspace: %d, rspace: %d", toUpdate, lspace, rspace)
+			log("trigger char: %s", toUpdate.charAt(toUpdate.length - 1))
 			update.view.dispatch({ changes: { from: from + lspace, to: to - rspace, insert: formatLine(trimmed) } })
 		}
 	}
