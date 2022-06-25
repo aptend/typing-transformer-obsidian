@@ -5,7 +5,7 @@ import { ViewPlugin, DecorationSet, ViewUpdate, EditorView, Decoration, WidgetTy
 
 
 // why spotter? because we need the plugin to provide special sections
-export type spotter = (update: ViewUpdate) => {from: number, to: number};
+export type spotter = (update: ViewUpdate) => { from: number, to: number };
 
 export function libertyZone(zonespotter: spotter): Extension {
     return ViewPlugin.fromClass(class {

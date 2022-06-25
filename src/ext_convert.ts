@@ -5,14 +5,14 @@ const ANCHOR = "¦";
 
 
 class ParseResult<T> {
-    constructor(readonly value: T, readonly error: string)  {}
+    constructor(readonly value: T, readonly error: string) { }
 
     get isOk(): boolean {
         return this.error == ""
     }
 }
 
-function Ok<T>(val:T): ParseResult<T> {
+function Ok<T>(val: T): ParseResult<T> {
     return new ParseResult(val, "")
 }
 
@@ -46,7 +46,7 @@ function prefixOf(s1: Array<string>, s2: Array<string>): boolean {
 
 function suffixOf(s1: Array<string>, s2: Array<string>): boolean {
     if (s1.length > s2.length) return false
-    for (let i = s1.length-1, j = s2.length - 1; i > -1; i--, j--) {
+    for (let i = s1.length - 1, j = s2.length - 1; i > -1; i--, j--) {
         if (s1[i] != s2[j]) return false
     }
     return true
@@ -59,12 +59,12 @@ export class Rule {
     lanchor: number
     ranchor: number
     replace: string
-    constructor(left:string, right: string) {
+    constructor(left: string, right: string) {
         this.left = Array.from(left)
         this.right = Array.from(right)
         this.lanchor = findOnlyAnchor(this.left)
-        this.ranchor = findOnlyAnchor(this.right) 
-        this.trig = this.left[this.lanchor-1]
+        this.ranchor = findOnlyAnchor(this.right)
+        this.trig = this.left[this.lanchor - 1]
         this.replace = this.right.slice(0, this.ranchor).join('') + this.right.slice(this.ranchor + 1).join('')
     }
 
@@ -76,8 +76,8 @@ export class Rule {
         const input = Array.from(inputS)
         if (!this.isValid || insChr != this.trig) return false
 
-        const {left, lanchor} = this
-    
+        const { left, lanchor } = this
+
         const matchRight = prefixOf(left.slice(lanchor + 1), input.slice(insPosBaseHead))
         const matchLeft = suffixOf(left.slice(0, lanchor - 1), input.slice(0, insPosBaseHead))
 
@@ -90,14 +90,14 @@ export class Rule {
         // so the start of modification zone is pos + 1 - lleftChars = pos + 1 - lanchor
         // and the end is start + leftLength - 2(which are trig + ANCHOR)
 
-        const {left, lanchor, ranchor} = this
+        const { left, lanchor, ranchor } = this
         const from = pos + 1 - lanchor
         const to = from + left.length - 2
         const newPos = pos + (ranchor - lanchor + 1)
 
         return {
-            changes: {from: from,  to: to, insert: this.replace },
-            selection: {anchor: newPos , head: newPos }
+            changes: { from: from, to: to, insert: this.replace },
+            selection: { anchor: newPos, head: newPos }
         }
     }
 }
@@ -107,16 +107,16 @@ class RuleParser {
     idx: number
     rules: Rule[]
     errors: string[]
-    constructor(input: string) { 
+    constructor(input: string) {
         this.idx = 0
         this.input = Array.from(input)
         this.rules = []
         this.errors = []
     }
 
-   
+
     private peek(): string {
-        const {idx, input} = this
+        const { idx, input } = this
         if (idx == input.length) {
             return EOF
         }
@@ -124,7 +124,7 @@ class RuleParser {
     }
 
     private eat(): string {
-        const {idx, input} = this
+        const { idx, input } = this
         if (idx == input.length) {
             return EOF
         }
@@ -134,7 +134,7 @@ class RuleParser {
     private rewind() { this.idx-- }
 
     private ignoreSpace() {
-        while (this.peek() === ' ') { this.eat() } 
+        while (this.peek() === ' ') { this.eat() }
     }
 
     private parseString(): ParseResult<string> {
@@ -183,13 +183,13 @@ class RuleParser {
             while (ch != '\n' && ch != EOF) {
                 ch = this.eat()
             }
-            if ( ch === '\n' ){
+            if (ch === '\n') {
                 this.rewind() // leave newline for parse to count
             }
         }
         if (ch != '\n' && ch != EOF) {
             return Err("Expect one rule ending with newline or EOF, found " + ch)
-        } 
+        }
         return Ok("#no content#")
     }
 
@@ -232,7 +232,7 @@ class RuleParser {
                 // EOF or a unexpected char
                 break
             }
-        } 
+        }
     }
 }
 
@@ -253,13 +253,13 @@ export class Rules {
         this.errors = parser.errors
         if (this.errors.length > 0) return
 
-        
+
         this.rules = parser.rules
-        
+
         let lmax = 0, rmax = 0 // how many chars should be extracted from doc
         for (const r of this.rules) {
             this.trigSet.add(r.trig)
-            const lmax_ = r.lanchor - 1, rmax_ = r.left.length - 1 - r.lanchor 
+            const lmax_ = r.lanchor - 1, rmax_ = r.left.length - 1 - r.lanchor
             if (lmax_ > lmax) lmax = lmax_
             if (rmax_ > rmax) rmax = rmax_
         }

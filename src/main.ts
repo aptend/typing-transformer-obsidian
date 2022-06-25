@@ -20,7 +20,7 @@ const SIDES_INSERT_MAP = new Map<string, { l: string, r: string }>([
 const PUNCTS = new Set<string>(" ，。：？,.:?");
 
 const DEFAULT_RULES = String.raw`# Rules
-# line head
+# line head, this rule can't apply to the very first line of the document
 '\n》¦' -> '\n>¦'
 '\n、¦' -> '\n/¦'
 
@@ -127,7 +127,7 @@ export default class TypingTransformer extends Plugin {
 		if (from == to) { return } // skip empty string and... 
 		for (const pos of this.specialSections) { // ... special secions and ..
 			// pos.start.line is 0-based while line.number is 1-based
-			if (pos.start.line <= line.number-1 && line.number-1 <= pos.end.line) { return }
+			if (pos.start.line <= line.number - 1 && line.number - 1 <= pos.end.line) { return }
 		}
 
 		const blockRanges = getBlockRanges(line.text, to - from)
