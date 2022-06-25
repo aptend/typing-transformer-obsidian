@@ -5,7 +5,7 @@ import { ViewPlugin, DecorationSet, ViewUpdate, EditorView, Decoration, WidgetTy
 
 
 // why spotter? because we need the plugin to provide special sections
-export type spotter = (update: ViewUpdate) => { from: number, to: number };
+export type spotter = (update: ViewUpdate) => {from: number, to: number};
 
 export function libertyZone(zonespotter: spotter): Extension {
     return ViewPlugin.fromClass(class {
@@ -17,7 +17,8 @@ export function libertyZone(zonespotter: spotter): Extension {
 
         update(update: ViewUpdate) {
             const range = zonespotter(update)
-            if (range === undefined) {
+            // see issue https://github.com/aptend/typing-transformer-obsidian/issues/18
+            if (range === undefined || update.state.doc.lineAt(range.from).from == range.from) {
                 if (this.decorations.size) {
                     this.decorations = Decoration.none
                 }
