@@ -149,10 +149,17 @@ class RuleParser {
             ch = this.eat()
             switch (ch) {
                 case '\\':
-                    if (this.peek() === "'") {
-                        result.push(this.eat())
-                    } else {
-                        result.push(ch)
+                    switch (this.peek()) {
+                        case "'":
+                            result.push(this.eat())
+                            break;
+                        case "n":
+                            this.eat()
+                            result.push('\n')
+                            break;
+                        default:
+                            result.push(ch)
+                            break;
                     }
                     break;
                 case "'":
@@ -216,7 +223,7 @@ class RuleParser {
         while (true) {
             const r = this.parseComment()
             if (!r.isOk) {
-                // this has something, go parsing
+                // this line has something, go parsing
                 const rRes = this.parseOne()
                 if (!rRes.isOk) {
                     this.errors.push(`error: line ${line}: ` + rRes.error)
@@ -244,7 +251,11 @@ export class Rules {
     lmax: number
     rmax: number
     constructor(ruletxt: string) {
-        const unescapedTxt = ruletxt.replaceAll("\\n", "\n")
+        // TODO: handle escape in parser?
+        const unescapedTxt = ruletxt
+            .replaceAll("\\|", "{0v0}") // to a placeholder
+            .replaceAll("|", ANCHOR)
+            .replaceAll("{0v0}", "|") // and convert it back
         const parser = new RuleParser(unescapedTxt)
         parser.parse()
         this.rules = []
@@ -252,7 +263,6 @@ export class Rules {
         this.lmax = this.rmax = 0
         this.errors = parser.errors
         if (this.errors.length > 0) return
-
 
         this.rules = parser.rules
 

@@ -20,28 +20,28 @@ const PUNCTS = new Set<string>(" ，。：？,.:?");
 
 const DEFAULT_RULES = String.raw`# Rules
 # line head, this rule can't apply to the very first line of the document
-'\n》¦' -> '\n>¦'
-'\n、¦' -> '\n/¦'
+'\n》|' -> '\n>|'
+'\n、|' -> '\n/|'
 
 # Two2one
-'。。¦' -> '.¦'
-'》》¦' -> '>¦'
-'、、¦' -> '/¦'
-'；；¦' -> ';¦'
-'，，¦' -> ',¦'
+'。。|' -> '.|'
+'》》|' -> '>|'
+'、、|' -> '/|'
+'；；|' -> ';|'
+'，，|' -> ',|'
 
 # auto pair and conver
-'《《¦》' -> '<¦' # this one take higer priority
-'《¦'     -> '《¦》'
-'（（¦）' -> '(¦)'
-'（¦'     -> '（¦）'
+'《《|》' -> '<|' # this one take higer priority
+'《|'     -> '《|》'
+'（（|）' -> '(|)'
+'（|'     -> '（|）'
 
 # auto block
-'··¦'  -> '\`¦\`' # inline block
-'\`·¦\`' -> '\`\`\`¦\n\`\`\`'
+'··|'  -> '\`|\`' # inline block
+'\`·|\`' -> '\`\`\`|\n\`\`\`'
 
 # have fun converting!
-# 'hv1111¦' -> 'have a nice day!¦'
+# 'hv1111|' -> 'have a nice day!|'
 `.replaceAll("\\`", "`")
 
 interface TypingTransformerSettings {
