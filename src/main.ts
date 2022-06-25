@@ -41,7 +41,7 @@ const DEFAULT_RULES = String.raw`# Rules
 '\`·|\`' -> '\`\`\`|\n\`\`\`'
 
 # have fun converting!
-# 'hv1111|' -> 'have a nice day!|'
+# 'hv1111|' -> 'have fun converting!|'
 `.replaceAll("\\`", "`")
 
 interface TypingTransformerSettings {
@@ -62,7 +62,7 @@ export default class TypingTransformer extends Plugin {
 	rulesErr: string;
 
 	async onload() {
-		console.log('loading my typing plugin');
+		console.log('loading typing transformer plugin');
 		await this.loadSettings();
 		initLog(this.settings)
 
@@ -104,7 +104,7 @@ export default class TypingTransformer extends Plugin {
 		this.addSettingTab(new SettingTab(this.app, this));
 	}
 
-	onunload() { console.log('unloading my typing plugin'); }
+	onunload() { console.log('unloading typing transformer plugin'); }
 
 	configureRules = (ruleString: string) => {
 		this.rules = new Rules(ruleString)
@@ -246,7 +246,7 @@ class SettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Debug")
-			.setDesc("Print more log to the console")
+			.setDesc("Print more logs to the console")
 			.addToggle(comp => comp
 				.setValue(plugin.settings.debug)
 				.onChange(async (value) => {
@@ -258,7 +258,7 @@ class SettingTab extends PluginSettingTab {
 		const ruleArea = new Setting(containerEl)
 		ruleArea.settingEl.setAttribute("style", "display: grid; grid-template-columns: 1fr;")
 		ruleArea.setName("Converting rules")
-			.setDesc("one line for one rule and rules that come first have higher priority")
+			.setDesc("one line is for one rule and rules that come first have higher priority")
 
 		const ruleInput = new TextAreaComponent(ruleArea.controlEl)
 		ruleInput.inputEl.setAttribute("style", "margin-top: 12px; width: 100%;  height: 30vh; font-family: 'Source Code Pro', monospace;")
@@ -273,7 +273,7 @@ class SettingTab extends PluginSettingTab {
 			if (plugin.rulesErr != "") {
 				ruleHint.setText(plugin.rulesErr)
 			} else {
-				ruleHint.setText("Ready to parse!")
+				ruleHint.setText(plugin.rules.rules.length + " rule(s) ready to go!")
 				await this.plugin.saveSettings()
 			}
 		}
