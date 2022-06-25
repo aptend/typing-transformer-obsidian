@@ -32,7 +32,7 @@ const DEFAULT_RULES = String.raw`# Rules
 '，，¦' -> ',¦'
 
 # auto pair and conver
-'《《¦》' -> '<¦' # this take higer priority
+'《《¦》' -> '<¦' # this one take higer priority
 '《¦'     -> '《¦》'
 '（（¦）' -> '(¦)'
 '（¦'     -> '（¦）'
@@ -187,10 +187,15 @@ export default class TypingTransformer extends Plugin {
 				return
 			}
 
-			const input = tr.startState.doc.sliceString(fromB - lmax, fromB + rmax)
-			console.log("---- ", input)
-
-			const rule = this.rules.match(input, char, lmax)
+			let leftIdx = fromB - lmax
+			let insertPosFromLineHead = lmax
+			if (leftIdx < 0) {
+				// at the very beginning of the document, we don't have enough chars required by lmax 
+				insertPosFromLineHead = lmax + leftIdx
+				leftIdx = 0
+			}
+			const input = tr.startState.doc.sliceString(leftIdx, fromB + rmax)
+			const rule = this.rules.match(input, char, insertPosFromLineHead)
 			if (rule != null) {
 				changes.push(rule.mapToChanges(fromB))
 			} else {
