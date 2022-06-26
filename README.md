@@ -1,6 +1,8 @@
 
 
-## Typing Transformer in Obsidian
+# Typing Transformer in Obsidian
+
+[中文文档](./README-CN.md)
 
 Typing Transformer is inspired by [Easy Typing](https://github.com/Yaozhuwa/easy-typing-obsidian), thanks to Easy Typing!
 

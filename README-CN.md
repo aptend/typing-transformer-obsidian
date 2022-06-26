@@ -1,6 +1,5 @@
 
-
-# Typing-transformer Obsidian
+# Typing Transformer in Obsidian
 
 Typing Transformer 受到 [Easy Typing](https://github.com/Yaozhuwa/easy-typing-obsidian) 启发, 感谢 Easy Typing !
 
