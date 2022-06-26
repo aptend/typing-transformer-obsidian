@@ -12,12 +12,11 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = (process.argv[2] === 'production');
-let pluginDir = "build"
+let pluginDir = "."
 try {
 	pluginDir = JSON.parse(fs.readFileSync('.env')).target_dir
 } catch(e) {
-	console.log(e)
-	fs.mkdir("build", (err) => {if (err.errno != -4075) throw err })
+	console.log("failed to read .env file, compile to current directory")
 }
 
 
