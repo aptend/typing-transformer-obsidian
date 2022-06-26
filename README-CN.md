@@ -58,13 +58,13 @@ A: 利用了 [pest.rs](https://pest.rs/) 编写了一个简单的语法解析规
 
 ```pest
 Block = _{ 
-	MultiSpace     // 多个连续空格
+    MultiSpace     // 多个连续空格
     | WHITSPACE    // 单一空格
-	| SpecialBlock // 特殊语法块，比如代码块和公式块
-	| Punct        // 半角断句标点
+    | SpecialBlock // 特殊语法块，比如代码块和公式块
+    | Punct        // 半角断句标点
     | FWPunct      // 全角短句标点
-	| Num          // 数字
-	| Cn           // 中文
+    | Num          // 数字
+    | Cn           // 中文
     | Eng          // 英文
     | Other        // 除上述类型外的字符块
 }

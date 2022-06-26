@@ -56,13 +56,13 @@ A: A simple syntax parsing rule is written using [pest.rs](https://pest.rs/) to 
 
 ```pest
 Block = _{ 
-	MultiSpace     // multiple consecutive spaces
+    MultiSpace     // multiple consecutive spaces
     | WHITSPACE    // single space
-	| SpecialBlock // inline code block or math block etc.
-	| Punct        // halfwidth punctuation
+    | SpecialBlock // inline code block or math block etc.
+    | Punct        // halfwidth punctuation
     | FWPunct      // fullwidth punctuation
-	| Num          // number
-	| Cn           // Chinese
+    | Num          // number
+    | Cn           // Chinese
     | Eng          // English
     | Other        // character blocks other than the above types
 }
