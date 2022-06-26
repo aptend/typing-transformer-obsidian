@@ -1,10 +1,10 @@
 {
-	"id": "typing-transformer-obsidian",
-	"name": "Typing Transformer",
-	"version": "0.0.1",
-	"minAppVersion": "0.13.8",
-	"description": "Improved, configurable auto formatting as typing",
-	"author": "aptend",
-	"authorUrl": "https://github.com/aptend",
-	"isDesktopOnly": false
+    "id": "typing-transformer-obsidian",
+    "name": "Typing Transformer",
+    "version": "0.0.2",
+    "minAppVersion": "0.13.8",
+    "description": "Improved, configurable auto formatting as typing",
+    "author": "aptend",
+    "authorUrl": "https://github.com/aptend",
+    "isDesktopOnly": false
 }

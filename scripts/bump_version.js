@@ -57,6 +57,7 @@ fs.writeFileSync('package.json', JSON.stringify(pkg, null, 4))
 fs.writeFileSync('manifest.json', JSON.stringify(manifest, null, 4))
 
 shresult(`git commit -a -m "bump to ${targetVersion}"`)
+shresult(`git push`)
 shresult(`git tag ${targetVersion}`)
-shresult(`git push origin --tags`, throwOrPrint)
+shresult(`git push origin --tags`)
 
