@@ -4,19 +4,12 @@ usage: node bump_version.js BUMP_TYPE [minAppVersion]
 
 const fs = require("fs")
 const process = require("process")
-const exec = require('child_process').exec;
+const exec = require('child_process').execSync;
 
-const shresult = function (command, cb) {
+const shresult = function (command) {
     console.log(command)
-    exec(command, function (err, stdout, stderr) {
-        if (err != null) {
-            return cb(new Error(err), null);
-        } else if (typeof (stderr) != "string") {
-            return cb(new Error(stderr), null);
-        } else {
-            return cb(null, stdout);
-        }
-    });
+    const buf = exec(command)
+    console.log(buf.toString())
 }
 
 
@@ -63,15 +56,7 @@ fs.writeFileSync('versions.json', JSON.stringify(versions, null, 4))
 fs.writeFileSync('package.json', JSON.stringify(pkg, null, 4))
 fs.writeFileSync('manifest.json', JSON.stringify(manifest, null, 4))
 
-
-const throwOrPrint = (err, stdout) => {
-    if (err != null) {
-        throw err
-    } else {
-        console.log(stdout)
-    }
-}
-
-shresult(`git commit -a -m 'bump to ${targetVersion}'`, throwOrPrint)
-shresult(`git tag ${targetVersion}`, throwOrPrint)
+shresult(`git commit -a -m "bump to ${targetVersion}"`)
+shresult(`git tag ${targetVersion}`)
 shresult(`git push origin --tags`, throwOrPrint)
+
