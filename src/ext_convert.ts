@@ -212,7 +212,7 @@ class RuleParser {
 
         const rule = new Rule(r1.value, r3.value)
         if (!rule.isValid) {
-            return Err("rule shuold has one and only one non-heading ¦")
+            return Err("rule shuold has one and only one non-heading |")
         }
 
         return Ok(rule)
