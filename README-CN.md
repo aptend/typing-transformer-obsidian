@@ -1,5 +1,5 @@
+<p align="right"><a href="https://github.com/aptend/typing-transformer-obsidian/blob/main/README.md">English</a> | <strong>中文</strong> </p>
 
-# Typing Transformer in Obsidian
 
 Typing Transformer 受到 [Easy Typing](https://github.com/Yaozhuwa/easy-typing-obsidian) 启发, 感谢 Easy Typing !
 
@@ -8,7 +8,7 @@ Typing transofrmer 拥有简洁的内部规则，灵活的配置能力，让用�
 **注意: Typing transformer 的实现依赖于 CodeMirror6，只能在 Obsidian 0.13.8 或更高的版本中的非 Legacy 模式生效**
 
 
-### 可配置的输入转换
+## 可配置的输入转换
 
 Typing trasnformer 支持输入时自动展开预定义的 snippets。
 
@@ -30,7 +30,7 @@ dpx| -> don't panic|
 
 更多的规则可以参考 Typing Transformer 的设置页面，有助于你自己的规则创建!
 
-### 选中区域两侧加入成对符号
+## 选中区域两侧加入成对符号
 
 当选中一块区域，并输入某些全角符号时，会自动在选中区域两侧加入对应的成对符号，方便进行 markdown 的格式调整。
 
@@ -40,7 +40,7 @@ dpx| -> don't panic|
 - `selected` + `￥` -> `$selected$`
 - `selected` + `“` 或 `”` -> `“selected”`
 
-### 自动加入空格
+## 自动加入空格
 
 多种语言混合输入时，如果在不同语言块之间插入空格，会带来更好的阅读体验。当然，Typing Transformer 可以帮助你完成空格的添加。
 

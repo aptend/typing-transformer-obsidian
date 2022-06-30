@@ -1,15 +1,15 @@
 
 
-# Typing Transformer in Obsidian
+<p align="right"><strong>English</strong> | <a href="https://github.com/aptend/typing-transformer-obsidian/blob/main/README-CN.md">中文</a></p>
 
-[中文文档](./README-CN.md)
+
 
 Typing Transformer is inspired by [Easy Typing](https://github.com/Yaozhuwa/easy-typing-obsidian), thanks to Easy Typing!
 
 Typing Transofrmer has clean internal rules, flexible configuration and allows users to have a customized auto-formatting experience as typing
 
 
-### Configurable input conversion
+## Configurable input conversion
 
 
 Typing Trasnformer supports automatic expansion of predefined snippets on input.
@@ -33,7 +33,7 @@ In addition to helping us expand abbreviated phrases, this pattern can also hand
 
 Refer to more rules in the setting page of Typing Transfomer and have fun converting!
 
-### Insert paired symbols to selection
+## Insert paired symbols to selection
 
 When an area is selected and some fullwidth symbols are entered, corresponding paired symbols are automatically added to both sides of the selected area for easy markdown formatting.
 
@@ -44,7 +44,7 @@ The following symbols are currently supported.
 - `selected` + `“` or `”` -> `“selected”`
 
 
-### Format line with spaces
+## Format line with spaces
 
 When typing in multiple languages, inserting spaces between different language blocks will bring a better reading experience. Of course, Typing Transformer can help you with the addition of spaces.
 
