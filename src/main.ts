@@ -4,45 +4,10 @@ import { EditorView, ViewUpdate } from '@codemirror/view';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm'
 import init, { formatLine, getBlockRanges } from '../liberty-web/charliberty'
-import { FW, SW } from './const';
+import { PUNCTS, SIDES_INSERT_MAP, DEFAULT_RULES } from './const';
 import { initLog, log } from './utils';
 import { Rules } from './ext_convert';
 import { libertyZone } from './ext_libertyzone'
-
-const SIDES_INSERT_MAP = new Map<string, { l: string, r: string }>([
-	[FW.DOT, { l: SW.DOT, r: SW.DOT }],
-	[FW.MONEY, { l: SW.MONEY, r: SW.MONEY }],
-	[FW.LEFTQUO, { l: FW.LEFTQUO, r: FW.RIGHTQUO }],
-	[FW.RIGHTQUO, { l: FW.LEFTQUO, r: FW.RIGHTQUO }],
-]);
-
-const PUNCTS = new Set<string>(" ，。：？,.:?");
-
-const DEFAULT_RULES = String.raw`# Rules
-# line head, this rule can't apply to the very first line of the document
-'\n》|' -> '\n>|'
-'\n、|' -> '\n/|'
-
-# Two2one
-'。。|' -> '.|'
-'》》|' -> '>|'
-'、、|' -> '/|'
-'；；|' -> ';|'
-'，，|' -> ',|'
-
-# auto pair and conver
-'《《|》' -> '<|' # this one take higer priority
-'《|'     -> '《|》'
-'（（|）' -> '(|)'
-'（|'     -> '（|）'
-
-# auto block
-'··|'  -> '\`|\`' # inline block
-'\`·|\`' -> '\`\`\`|\n\`\`\`'
-
-# have fun converting!
-# 'hv1111|' -> 'have fun converting!|'
-`.replaceAll("\\`", "`")
 
 interface TypingTransformerSettings {
 	debug: boolean,
@@ -53,7 +18,6 @@ const DEFAULT_SETTINGS: TypingTransformerSettings = {
 	debug: true,
 	convertRules: DEFAULT_RULES,
 }
-
 
 export default class TypingTransformer extends Plugin {
 	settings: TypingTransformerSettings;
