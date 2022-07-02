@@ -1,5 +1,6 @@
 <p align="right"><a href="https://github.com/aptend/typing-transformer-obsidian/blob/main/README.md">English</a> | <strong>中文</strong> </p>
 
+---
 
 Typing Transformer 受到 [Easy Typing](https://github.com/Yaozhuwa/easy-typing-obsidian) 启发, 感谢 Easy Typing !
 
@@ -32,13 +33,15 @@ dpx| -> don't panic|
 
 ## 选中区域两侧加入成对符号
 
-当选中一块区域，并输入某些全角符号时，会自动在选中区域两侧加入对应的成对符号，方便进行 markdown 的格式调整。
+当选中一块区域，并输入某些符号时，会自动在选中区域两侧加入对应的成对符号。
 
 目前支持的符号有：
 
 - `selected` + `·` -> `` `selected` ``
 - `selected` + `￥` -> `$selected$`
 - `selected` + `“` 或 `”` -> `“selected”`
+- `selected` + `<`  -> `<selected>`
+- `selected` + `《`  -> `《selected》`
 
 ## 自动加入空格
 

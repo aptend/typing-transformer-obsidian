@@ -2,12 +2,13 @@
 
 <p align="right"><strong>English</strong> | <a href="https://github.com/aptend/typing-transformer-obsidian/blob/main/README-CN.md">中文</a></p>
 
-
+---
 
 Typing Transformer is inspired by [Easy Typing](https://github.com/Yaozhuwa/easy-typing-obsidian), thanks to Easy Typing!
 
 Typing Transofrmer has clean internal rules, flexible configuration and allows users to have a customized auto-formatting experience as typing
 
+**Note: The implementation depends on CodeMirror6 and only works in non-legacy mode in Obsidian 0.13.8 or later**
 
 ## Configurable input conversion
 
@@ -35,13 +36,15 @@ Refer to more rules in the setting page of Typing Transfomer and have fun conver
 
 ## Insert paired symbols to selection
 
-When an area is selected and some fullwidth symbols are entered, corresponding paired symbols are automatically added to both sides of the selected area for easy markdown formatting.
+When an area is selected and some symbols are entered, corresponding paired symbols are automatically added to both sides of the selected area.
 
 The following symbols are currently supported.
 
 - `selected` + `·` -> `` `selected` ``
 - `selected` + `￥` -> `$selected$`
 - `selected` + `“` or `”` -> `“selected”`
+- `selected` + `<`  -> `<selected>`
+- `selected` + `《`  -> `《selected》`
 
 
 ## Format line with spaces
@@ -70,7 +73,7 @@ Block = _{
 }
 ```
 
-**By default, a space is added between each type**. However, there are several cases where spaces are not added
+**By default, a space is added between each type**. However, there are several cases where spaces are not added:
 
 1. `MultiSpace` and the surrounding blocks
 1. `FWPunct` and surrounding blocks

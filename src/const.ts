@@ -1,4 +1,5 @@
 
+// full width
 export namespace FW {
     export const DOT = "·";
     export const MONEY = "￥";
@@ -10,10 +11,10 @@ export namespace FW {
     export const RIGHTQUO = "”";
     export const LEFTPAREN = "（";
     export const RIGHTPAREN = "）";
-    export const CONTIN_CHARS_SET = new Set<string>([DOT, MONEY, FULLSTOP, LT, GT, SLASH, LEFTQUO, LEFTPAREN, RIGHTQUO, RIGHTPAREN]);
 }
 
 
+// semi width
 export namespace SW {
     export const DOT = "`";
     export const MONEY = "$";
@@ -25,7 +26,6 @@ export namespace SW {
     export const RIGHTQUO = '"';
     export const LEFTPAREN = "(";
     export const RIGHTPAREN = ")";
-    export const CONTIN_CHARS_SET = new Set<string>([DOT, MONEY, FULLSTOP, LT, GT, SLASH, LEFTQUO, LEFTPAREN, RIGHTQUO, RIGHTPAREN]);
 }
 
 export const SIDES_INSERT_MAP = new Map<string, { l: string, r: string }>([
@@ -33,6 +33,8 @@ export const SIDES_INSERT_MAP = new Map<string, { l: string, r: string }>([
     [FW.MONEY, { l: SW.MONEY, r: SW.MONEY }],
     [FW.LEFTQUO, { l: FW.LEFTQUO, r: FW.RIGHTQUO }],
     [FW.RIGHTQUO, { l: FW.LEFTQUO, r: FW.RIGHTQUO }],
+    [FW.LT, { l: FW.LT, r: FW.GT }],
+    [SW.LT, { l: SW.LT, r: SW.GT }],
 ]);
 
 export const PUNCTS = new Set<string>(" ，。：？,.:?");
