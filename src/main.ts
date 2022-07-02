@@ -1,6 +1,6 @@
 import { App, Plugin, PluginSettingTab, Pos, Setting, TextAreaComponent, ButtonComponent } from 'obsidian';
-import { EditorState, StateField, Transaction, TransactionSpec } from '@codemirror/state';
-import { EditorView, ViewUpdate } from '@codemirror/view';
+import { EditorState, Extension, StateField, Transaction, TransactionSpec } from '@codemirror/state';
+import { EditorView, keymap, ViewUpdate } from '@codemirror/view';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm'
 import init, { formatLine, getBlockRanges } from '../liberty-web/charliberty'
@@ -12,49 +12,80 @@ import { libertyZone } from './ext_libertyzone'
 interface TypingTransformerSettings {
 	debug: boolean,
 	convertRules: string,
+	autoFormatOn: boolean,
+	zoneIndicatorOn: boolean,
 }
 
 const DEFAULT_SETTINGS: TypingTransformerSettings = {
-	debug: true,
+	debug: false,
 	convertRules: DEFAULT_RULES,
+	zoneIndicatorOn: true,
+	autoFormatOn: true,
 }
+
+
+enum ExtID {
+	Conversion,
+	SideInsert,
+	ZoneIndicator,
+	AutoFormat,
+	KeyMap,
+	Debug,
+}
+
+const deubgExt = StateField.define({
+	create: (_state): number => { return 0 },
+	update: (value, tr) => {
+		if (tr.docChanged) {
+			tr.changes.iterChanges((a, b, c, d, insert) => {
+				console.log(a, b, c, d, insert.sliceString(0))
+			})
+		}
+		return value
+	}
+})
 
 export default class TypingTransformer extends Plugin {
 	settings: TypingTransformerSettings;
 	specialSections: Pos[];
 	rules: Rules;
 	rulesErr: string;
+	availablExts: Extension[];
+	activeExts: Extension[];
+
 
 	async onload() {
 		console.log('loading typing transformer plugin');
+		// read saved settings
 		await this.loadSettings();
 		initLog(this.settings)
-
 		// make wasm ready
 		await init(wasmbin)
-
-		this.configureRules(this.settings.convertRules)
-
 		this.specialSections = []
-
-		this.registerEditorExtension([
-			libertyZone(this.spotLibertyZone),
-			EditorState.transactionFilter.of(this.sidesInsertFilter),
+		this.activeExts = []
+		this.availablExts = [
 			EditorState.transactionFilter.of(this.continuousFullWidthCharFilter),
+			EditorState.transactionFilter.of(this.sidesInsertFilter),
+			libertyZone(this.spotLibertyZone),
 			EditorView.updateListener.of(this.addLiberty),
-			StateField.define({
-				create: (state): number => { return 0 },
-				update: (value, tr) => {
-					if (tr.docChanged && this.settings.debug) {
-						tr.changes.iterChanges((a, b, c, d, insert) => {
-							console.log(a, b, c, d, insert.sliceString(0))
-						})
+			deubgExt,
+			keymap.of([
+				{
+					key: "a-b",
+					run: (_view): boolean => {
+						log("alt-b pressed")
+						return true
 					}
-					return value
 				}
-			})
-		])
-
+			])
+		]
+		
+		// parse saved rules
+		this.configureRules(this.settings.convertRules)
+		// activate selected extensions
+		this.configureActiveExtsFromSettings()
+		this.registerEditorExtension(this.activeExts)
+		// subscribe meta change
 		this.registerEvent(this.app.metadataCache.on("changed", (_f, _d, meta) => {
 			this.specialSections.length = 0
 			meta.sections?.forEach((sec) => {
@@ -77,6 +108,16 @@ export default class TypingTransformer extends Plugin {
 		} else {
 			this.rulesErr = ""
 		}
+	}
+
+	configureActiveExtsFromSettings = () => {
+		const activeIds = [ExtID.Conversion, ExtID.SideInsert]
+		const {debug, zoneIndicatorOn, autoFormatOn } = this.settings
+		debug ? activeIds.push(ExtID.Debug) : null
+		zoneIndicatorOn ? activeIds.push(ExtID.ZoneIndicator) : null
+		autoFormatOn ? activeIds.push(ExtID.AutoFormat) : null
+		this.activeExts.forEach((_ext, idx) => this.activeExts[idx] = [])
+		activeIds.forEach((extid) => this.activeExts[extid] = this.availablExts[extid])
 	}
 
 	spotLibertyZone = ({ view, docChanged }: ViewUpdate): { from: number, to: number } => {
@@ -216,6 +257,32 @@ class SettingTab extends PluginSettingTab {
 				.onChange(async (value) => {
 					plugin.settings.debug = value;
 					await plugin.saveSettings();
+				})
+			)
+
+		new Setting(containerEl)
+			.setName("Auto Format")
+			.setDesc("Enable auto adding spaces etc.")
+			.addToggle(comp => comp
+				.setValue(plugin.settings.autoFormatOn)
+				.onChange(async (value) => {
+					plugin.settings.autoFormatOn = value;
+					await plugin.saveSettings();
+					plugin.configureActiveExtsFromSettings();
+					plugin.app.workspace.updateOptions()
+				})
+			)
+		
+		new Setting(containerEl)
+			.setName("Zone Indicator")
+			.setDesc("Enable showing zone indicator's start point as '⭐️'")
+			.addToggle(comp => comp
+				.setValue(plugin.settings.zoneIndicatorOn)
+				.onChange(async (value) => {
+					plugin.settings.zoneIndicatorOn = value;
+					await plugin.saveSettings();
+					plugin.configureActiveExtsFromSettings();
+					plugin.app.workspace.updateOptions()
 				})
 			)
 
