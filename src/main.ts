@@ -64,7 +64,7 @@ export default class TypingTransformer extends Plugin {
 		this.specialSections = []
 		this.activeExts = []
 		this.availablExts = [
-			EditorState.transactionFilter.of(this.continuousFullWidthCharFilter),
+			EditorState.transactionFilter.of(this.convertFilter),
 			EditorState.transactionFilter.of(this.sidesInsertFilter),
 			libertyZone(this.spotLibertyZone),
 			EditorView.updateListener.of(this.addLiberty),
@@ -177,7 +177,7 @@ export default class TypingTransformer extends Plugin {
 		}
 	}
 
-	continuousFullWidthCharFilter = (tr: Transaction): TransactionSpec | readonly TransactionSpec[] => {
+	convertFilter = (tr: Transaction): TransactionSpec | readonly TransactionSpec[] => {
 		if (!tr.docChanged) { return tr }
 		let shouldHijack = true // Hijack when some rules match all changes
 		const changes: TransactionSpec[] = []
