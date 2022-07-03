@@ -81,6 +81,7 @@ export default class TypingTransformer extends Plugin {
 				}
 			])
 		]
+		this.availablExts.forEach((_, idx) => this.activeExts[idx] = [])
 		
 		// parse saved rules
 		this.configureRules(this.settings.convertRules)
@@ -253,16 +254,16 @@ class SettingTab extends PluginSettingTab {
 		const { containerEl, plugin } = this;
 		containerEl.empty();
 
-		new Setting(containerEl)
-			.setName("Debug")
-			.setDesc("Print more logs to the console")
-			.addToggle(comp => comp
-				.setValue(plugin.settings.debug)
-				.onChange(async (value) => {
-					plugin.settings.debug = value;
-					await plugin.saveSettings();
-				})
-			)
+		// new Setting(containerEl)
+		// 	.setName("Debug")
+		// 	.setDesc("Print more logs to the console")
+		// 	.addToggle(comp => comp
+		// 		.setValue(plugin.settings.debug)
+		// 		.onChange(async (value) => {
+		// 			plugin.settings.debug = value;
+		// 			await plugin.saveSettings();
+		// 		})
+		// 	)
 
 		new Setting(containerEl)
 			.setName("Auto Format")
