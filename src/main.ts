@@ -33,7 +33,7 @@ enum ExtID {
 	KeyMap
 }
 
-const AlreadyConvert = Annotation.define<boolean>()
+const ProgramTxn = Annotation.define<boolean>()
 
 const deubgExt = StateField.define({
 	create: (_state): number => { return 0 },
@@ -175,12 +175,12 @@ export default class TypingTransformer extends Plugin {
 			const rspace = toUpdate.length - toUpdate.trimEnd().length
 			log("toUpdate: %s, lspace: %d, rspace: %d", toUpdate, lspace, rspace)
 			log("trigger char: %s", toUpdate.charAt(toUpdate.length - 1))
-			update.view.dispatch({ changes: { from: from + lspace, to: to - rspace, insert: formatLine(trimmed) } })
+			update.view.dispatch({ changes: { from: from + lspace, to: to - rspace, insert: formatLine(trimmed) }, annotations: ProgramTxn.of(true) })
 		}
 	}
 
 	convertFilter = (tr: Transaction): TransactionSpec | readonly TransactionSpec[] => {
-		if (!tr.docChanged) { return tr }
+		if (!tr.docChanged || tr.annotation(ProgramTxn)) { return tr }
 		let shouldHijack = true // Hijack when some rules match all changes
 		const changes: TransactionSpec[] = []
 		tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
@@ -202,7 +202,7 @@ export default class TypingTransformer extends Plugin {
 			const rule = this.rules.match(input, char, insertPosFromLineHead)
 			if (rule != null) {
 				const change = rule.mapToChanges(fromB)
-				change.annotations = AlreadyConvert.of(true)
+				change.annotations = ProgramTxn.of(true)
 				changes.push(change)
 			} else {
 				shouldHijack = false
@@ -214,7 +214,7 @@ export default class TypingTransformer extends Plugin {
 	}
 
 	sidesInsertFilter = (tr: Transaction): TransactionSpec | readonly TransactionSpec[] => {
-		if (!tr.docChanged || tr.annotation(AlreadyConvert)) { return tr }
+		if (!tr.docChanged || tr.annotation(ProgramTxn)) { return tr }
 		let shouldHijack = true
 		const changes: TransactionSpec[] = []
 		tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
@@ -224,8 +224,8 @@ export default class TypingTransformer extends Plugin {
 				return
 			}
 			const insert = SIDES_INSERT_MAP.get(char)
-			changes.push({ changes: { from: fromA, to: fromA, insert: insert.l } })
-			changes.push({ changes: { from: toA, to: toA, insert: insert.r } })
+			changes.push({ changes: { from: fromA, to: fromA, insert: insert.l }, annotations: ProgramTxn.of(true) })
+			changes.push({ changes: { from: toA, to: toA, insert: insert.r }, annotations: ProgramTxn.of(true) })
 		})
 
 		if (shouldHijack) { tr = tr.startState.update(...changes) }
