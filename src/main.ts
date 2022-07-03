@@ -1,5 +1,5 @@
 import { App, Plugin, PluginSettingTab, Pos, Setting, TextAreaComponent, ButtonComponent } from 'obsidian';
-import { EditorState, Extension, StateField, Transaction, TransactionSpec } from '@codemirror/state';
+import { Annotation, EditorState, Extension, StateField, Transaction, TransactionSpec } from '@codemirror/state';
 import { EditorView, keymap, ViewUpdate } from '@codemirror/view';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm'
@@ -25,13 +25,15 @@ const DEFAULT_SETTINGS: TypingTransformerSettings = {
 
 
 enum ExtID {
-	Conversion,
 	SideInsert,
+	Conversion,
 	ZoneIndicator,
 	AutoFormat,
-	KeyMap,
 	Debug,
+	KeyMap
 }
+
+const AlreadyConvert = Annotation.define<boolean>()
 
 const deubgExt = StateField.define({
 	create: (_state): number => { return 0 },
@@ -64,8 +66,8 @@ export default class TypingTransformer extends Plugin {
 		this.specialSections = []
 		this.activeExts = []
 		this.availablExts = [
-			EditorState.transactionFilter.of(this.convertFilter),
 			EditorState.transactionFilter.of(this.sidesInsertFilter),
+			EditorState.transactionFilter.of(this.convertFilter),
 			libertyZone(this.spotLibertyZone),
 			EditorView.updateListener.of(this.addLiberty),
 			deubgExt,
@@ -199,7 +201,9 @@ export default class TypingTransformer extends Plugin {
 			const input = tr.startState.doc.sliceString(leftIdx, fromB + rmax)
 			const rule = this.rules.match(input, char, insertPosFromLineHead)
 			if (rule != null) {
-				changes.push(rule.mapToChanges(fromB))
+				const change = rule.mapToChanges(fromB)
+				change.annotations = AlreadyConvert.of(true)
+				changes.push(change)
 			} else {
 				shouldHijack = false
 			}
@@ -210,7 +214,7 @@ export default class TypingTransformer extends Plugin {
 	}
 
 	sidesInsertFilter = (tr: Transaction): TransactionSpec | readonly TransactionSpec[] => {
-		if (!tr.docChanged) { return tr }
+		if (!tr.docChanged || tr.annotation(AlreadyConvert)) { return tr }
 		let shouldHijack = true
 		const changes: TransactionSpec[] = []
 		tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
