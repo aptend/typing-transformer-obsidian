@@ -63,4 +63,4 @@ export const DEFAULT_RULES = String.raw`# Rules
 
 # have fun converting!
 # 'hv1111|' -> 'have fun converting!|'
-`.replaceAll("\\`", "`")
+`.replaceAll("\\`", "`");

@@ -15,6 +15,7 @@
     "rules": {
       "@typescript-eslint/no-unused-vars": ["error", { "args": "none" }],
       "@typescript-eslint/no-namespace": "off",
-      "no-constant-condition": ["error", { "checkLoops": false }]
+      "no-constant-condition": ["error", { "checkLoops": false }],
+      "semi": [2, "always"]
     } 
   }
