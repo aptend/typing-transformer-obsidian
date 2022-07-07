@@ -1,4 +1,98 @@
-/* Sets all the text color to red! */
-body {
-    color: red;
+.rules-text-area {
+    width: 100%;
+    display: inline-block;
+}
+
+.rules-text-area .setting-item-info {
+    margin-bottom: 0.75rem;
+}
+
+
+.rules-text-area .setting-item-control {
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+
+.rules-editor-wrapper {
+    width: 100%;
+    margin-bottom: 0.75rem;
+}
+
+
+.rules-editor-wrapper .cm-editor {
+    height: 20em;
+    font-size: var(--font-inputs);
+    text-align: left;
+    outline: none !important;
+
+    border: 1px solid var(--background-modifier-border);
+}
+
+
+.rules-editor-wrapper .cm-editor,
+.cm-scroller {
+    border-radius: 4px;
+}
+
+
+.rules-editor-wrapper .cm-line,
+.rules-editor-wrapper .cm-lineNumbers {
+    font-family: var(--font-monospace);
+}
+
+
+.rules-footer {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+
+.rules-editor-validity {
+    display: flex;
+    align-items: center;
+}
+
+.rules-editor-validity-txt {
+    padding: 0.5em;
+}
+
+.rules-editor-validity-indicator {
+    color: white;
+    display: inline-block;
+    border-radius: 1em;
+    padding: 0.1em;
+    margin-right: 1em;
+    cursor: default;
+    visibility: hidden;
+}
+
+
+.rules-editor-validity-indicator svg {
+    width: 12px !important;
+    height: 12px !important;
+}
+
+
+.rules-editor-validity-indicator:hover {
+    color: white;
+}
+
+
+.rules-editor-validity-indicator.valid {
+    background-color: #7dc535;
+    visibility: visible;
+}
+
+
+.theme-dark .rules-editor-validity-indicator.valid {
+    background-color: #588b24;
+}
+
+
+.rules-editor-validity-indicator.invalid {
+    background-color: #ea5555;
+    visibility: visible;
 }

@@ -1,27 +1,14 @@
-import { App, Plugin, PluginSettingTab, Pos, Setting, TextAreaComponent, ButtonComponent } from 'obsidian';
+import { Plugin, Pos } from 'obsidian';
 import { Annotation, EditorState, Extension, StateField, Transaction, TransactionSpec } from '@codemirror/state';
 import { EditorView, keymap, ViewUpdate } from '@codemirror/view';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm';
 import init, { formatLine, getBlockRanges } from '../liberty-web/charliberty';
-import { PUNCTS, SIDES_INSERT_MAP, DEFAULT_RULES } from './const';
+import { PUNCTS, SIDES_INSERT_MAP } from './const';
 import { initLog, log } from './utils';
 import { Rules } from './ext_convert';
 import { libertyZone } from './ext_libertyzone';
-
-interface TypingTransformerSettings {
-	debug: boolean,
-	convertRules: string,
-	autoFormatOn: boolean,
-	zoneIndicatorOn: boolean,
-}
-
-const DEFAULT_SETTINGS: TypingTransformerSettings = {
-	debug: false,
-	convertRules: DEFAULT_RULES,
-	zoneIndicatorOn: true,
-	autoFormatOn: true,
-};
+import { TypingTransformerSettings, SettingTab, DEFAULT_SETTINGS } from './settings';
 
 
 enum ExtID {
@@ -239,92 +226,5 @@ export default class TypingTransformer extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
-	}
-}
-
-class SettingTab extends PluginSettingTab {
-	plugin: TypingTransformer;
-
-	constructor(app: App, plugin: TypingTransformer) {
-		super(app, plugin);
-		this.plugin = plugin;
-	}
-
-	display(): void {
-		const { containerEl, plugin } = this;
-		containerEl.empty();
-
-		// new Setting(containerEl)
-		// 	.setName("Debug")
-		// 	.setDesc("Print more logs to the console")
-		// 	.addToggle(comp => comp
-		// 		.setValue(plugin.settings.debug)
-		// 		.onChange(async (value) => {
-		// 			plugin.settings.debug = value;
-		// 			await plugin.saveSettings();
-		// 		})
-		// 	)
-
-		new Setting(containerEl)
-			.setName("Auto Format")
-			.setDesc("Enable auto adding spaces etc.")
-			.addToggle(comp => comp
-				.setValue(plugin.settings.autoFormatOn)
-				.onChange(async (value) => {
-					plugin.settings.autoFormatOn = value;
-					await plugin.saveSettings();
-					plugin.configureActiveExtsFromSettings();
-					plugin.app.workspace.updateOptions();
-				})
-			);
-		
-		new Setting(containerEl)
-			.setName("Zone Indicator")
-			.setDesc("Enable showing zone indicator's start point as '⭐️'")
-			.addToggle(comp => comp
-				.setValue(plugin.settings.zoneIndicatorOn)
-				.onChange(async (value) => {
-					plugin.settings.zoneIndicatorOn = value;
-					await plugin.saveSettings();
-					plugin.configureActiveExtsFromSettings();
-					plugin.app.workspace.updateOptions();
-				})
-			);
-
-		const ruleArea = new Setting(containerEl);
-		ruleArea.settingEl.setAttribute("style", "display: grid; grid-template-columns: 1fr;");
-		ruleArea.setName("Converting rules")
-			.setDesc("one line is for one rule and rules that come first have higher priority");
-
-		const ruleInput = new TextAreaComponent(ruleArea.controlEl);
-		ruleInput.inputEl.setAttribute("style", "margin-top: 12px; width: 100%;  height: 30vh; font-family: 'Source Code Pro', monospace;");
-		ruleInput.setValue(plugin.settings.convertRules);
-
-		const ruleControl = containerEl.createDiv("ruleCtrl");
-		ruleControl.setAttr("display", "flex");
-
-		const feedRules = async (newRule: string) => {
-			plugin.settings.convertRules = newRule;
-			plugin.configureRules(newRule);
-			if (plugin.rulesErr != "") {
-				ruleHint.setText(plugin.rulesErr);
-			} else {
-				ruleHint.setText(plugin.rules.rules.length + " rule(s) ready to go!");
-				await this.plugin.saveSettings();
-			}
-		};
-
-		new ButtonComponent(ruleControl)
-			.setTooltip("apply these rules")
-			.setButtonText('Apply')
-			.onClick(_ => feedRules(ruleInput.getValue()));
-
-		const ruleHint = ruleControl.createEl("a", { text: plugin.rulesErr });
-
-		new ButtonComponent(ruleControl)
-			.setTooltip("reset default rules")
-			.setButtonText('Reset')
-			.onClick(_ => { ruleInput.setValue(DEFAULT_RULES); feedRules(DEFAULT_RULES); })
-			.buttonEl.setAttribute('style', 'float: right;');
 	}
 }
