@@ -6,7 +6,7 @@ Typing Transformer 受到 [Easy Typing](https://github.com/Yaozhuwa/easy-typing-
 
 Typing transofrmer 拥有简洁的内部规则，灵活的配置能力，让用户拥有定制的自动格式化体验
 
-**注意: Typing transformer 的实现依赖于 CodeMirror6，只能在 Obsidian 0.13.8 或更高的版本中的非 Legacy 模式生效**
+**注意: Typing transformer 的实现依赖于 CodeMirror6，只能在 Obsidian 0.14.15 或更高的版本中的非 Legacy 模式生效**
 
 
 ## 可配置的输入转换

@@ -8,7 +8,7 @@ Typing Transformer is inspired by [Easy Typing](https://github.com/Yaozhuwa/easy
 
 Typing Transofrmer has clean internal rules, flexible configuration and allows users to have a customized auto-formatting experience as typing
 
-**Note: The implementation depends on CodeMirror6 and only works in non-legacy mode in Obsidian 0.13.8 or later**
+**Note: The implementation depends on CodeMirror6 and only works in non-legacy mode in Obsidian 0.14.15 or later**
 
 ## Configurable input conversion
 
