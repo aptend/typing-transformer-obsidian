@@ -51,7 +51,7 @@ export const DEFAULT_RULES = String.raw`# Rules
 '；；|' -> ';|'
 '，，|' -> ',|'
 
-# auto pair and conver
+# auto pair and convert
 '《《|》' -> '<|' # this one take higer priority
 '《|'     -> '《|》'
 '（（|）' -> '(|)'
