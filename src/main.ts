@@ -4,7 +4,7 @@ import { EditorView, keymap, ViewUpdate } from '@codemirror/view';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm';
 import init, { formatLine, getBlockRanges } from '../liberty-web/charliberty';
-import { PUNCTS, SIDES_INSERT_MAP } from './const';
+import { PUNCTS } from './const';
 import { initLog, log } from './utils';
 import { Rules } from './ext_convert';
 import { libertyZone } from './ext_libertyzone';
@@ -207,11 +207,11 @@ export default class TypingTransformer extends Plugin {
 		const changes: TransactionSpec[] = [];
 		tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
 			const char = inserted.sliceString(0);
-			if (!shouldHijack || fromA == toA || toB != fromB + 1 || !SIDES_INSERT_MAP.has(char)) {
+			if (!shouldHijack || fromA == toA || toB != fromB + 1 || !this.rules.sideInsertMap.has(char)) {
 				shouldHijack = false;
 				return;
 			}
-			const insert = SIDES_INSERT_MAP.get(char);
+			const insert = this.rules.sideInsertMap.get(char);
 			changes.push({ changes: { from: fromA, to: fromA, insert: insert.l }, annotations: ProgramTxn.of(true) });
 			changes.push({ changes: { from: toA, to: toA, insert: insert.r }, annotations: ProgramTxn.of(true) });
 		});

@@ -52,7 +52,26 @@ function suffixOf(s1: Array<string>, s2: Array<string>): boolean {
     return true;
 }
 
-export class Rule {
+
+enum RuleType {
+    ConvRule,
+    SideRule,
+}
+
+class Rule {
+    type: RuleType;
+    conv: ConvRule;
+    side: SideRule;
+}
+
+class SideRule {
+    constructor(readonly trig: string, readonly left: string, readonly right: string) { }
+    get isValid(): boolean {
+        return this.trig.length === 1;
+    }
+}
+
+class ConvRule {
     trig: string;
     left: Array<string>;
     right: Array<string>;
@@ -102,15 +121,18 @@ export class Rule {
     }
 }
 
+
 class RuleParser {
     input: string[];
     idx: number;
-    rules: Rule[];
+    convRules: ConvRule[];
+    sideRules: Map<string, { l: string, r: string }>;
     errors: string[];
     constructor(input: string) {
         this.idx = 0;
         this.input = Array.from(input);
-        this.rules = [];
+        this.convRules = [];
+        this.sideRules = new Map();
         this.errors = [];
     }
 
@@ -200,6 +222,19 @@ class RuleParser {
         return Ok("#no content#");
     }
 
+    // a side insert rule is like 'x' -> 'xx' + 'yy'
+    // isSideRule check if a '+' exists
+    private isSideRule(): boolean {
+        this.ignoreSpace();
+        const ch = this.peek();
+        if (ch != '+') {
+            return false;
+        } else {
+            this.eat();
+            return true;
+        }
+    }
+
     parseOne(): ParseResult<Rule> {
         const r1 = this.parseString();
         if (!r1.isOk) { return Err(r1.error); }
@@ -207,13 +242,28 @@ class RuleParser {
         if (!r2.isOk) { return Err(r2.error); }
         const r3 = this.parseString();
         if (!r3.isOk) { return Err(r3.error); }
+
+        const rule = new Rule();
+        if (this.isSideRule()) {
+            const rightInsert = this.parseString();
+            if (!rightInsert.isOk) { return Err(rightInsert.error); }
+            const sideRule = new SideRule(r1.value, r3.value, rightInsert.value);
+            if (!sideRule.isValid) {
+                return Err("the trigger of a side insert rule should be a single char");
+            }
+            rule.type = RuleType.SideRule;
+            rule.side = sideRule;
+        } else {
+            const convRule = new ConvRule(r1.value, r3.value);
+            if (!convRule.isValid) {
+                return Err("rule shuold has one and only one non-heading |");
+            }
+            rule.type = RuleType.ConvRule;
+            rule.conv = convRule;
+        }
+
         const r4 = this.parseComment();
         if (!r4.isOk) { return Err(r4.error); }
-
-        const rule = new Rule(r1.value, r3.value);
-        if (!rule.isValid) {
-            return Err("rule shuold has one and only one non-heading |");
-        }
 
         return Ok(rule);
     }
@@ -227,8 +277,11 @@ class RuleParser {
                 const rRes = this.parseOne();
                 if (!rRes.isOk) {
                     this.errors.push(`error: line ${line}: ` + rRes.error);
+                } else if (rRes.value.type === RuleType.ConvRule) {
+                    this.convRules.push(rRes.value.conv);
                 } else {
-                    this.rules.push(rRes.value);
+                    const s = rRes.value.side;
+                    this.sideRules.set(s.trig, { l: s.left, r: s.right });
                 }
             }
 
@@ -245,7 +298,9 @@ class RuleParser {
 
 
 export class Rules {
-    rules: Rule[];
+    // fetch side insert rules directly from this map
+    sideInsertMap: Map<string, { l: string, r: string }>;
+    rules: ConvRule[];
     errors: string[];
     trigSet: Set<string>;
     lmax: number;
@@ -264,7 +319,8 @@ export class Rules {
         this.errors = parser.errors;
         if (this.errors.length > 0) return;
 
-        this.rules = parser.rules;
+        this.rules = parser.convRules;
+        this.sideInsertMap = parser.sideRules;
 
         let lmax = 0, rmax = 0; // how many chars should be extracted from doc
         for (const r of this.rules) {
@@ -278,8 +334,8 @@ export class Rules {
         this.rmax = rmax;
     }
 
-
-    match(input: string, insChar: string, insPosBaseLineHead: number): Rule {
+    // match a convert rule
+    match(input: string, insChar: string, insPosBaseLineHead: number): ConvRule {
         for (const rule of this.rules) {
             if (rule.canConvert(input, insChar, insPosBaseLineHead)) {
                 return rule;

@@ -28,23 +28,18 @@ export namespace SW {
     export const RIGHTPAREN = ")";
 }
 
-export const SIDES_INSERT_MAP = new Map<string, { l: string, r: string }>([
-    [FW.DOT, { l: SW.DOT, r: SW.DOT }],
-    [FW.MONEY, { l: SW.MONEY, r: SW.MONEY }],
-    [FW.LEFTQUO, { l: FW.LEFTQUO, r: FW.RIGHTQUO }],
-    [FW.RIGHTQUO, { l: FW.LEFTQUO, r: FW.RIGHTQUO }],
-    [FW.LT, { l: FW.LT, r: FW.GT }],
-    [SW.LT, { l: SW.LT, r: SW.GT }],
-]);
 
 export const PUNCTS = new Set<string>(" ，。：？,.:?");
 
-export const DEFAULT_RULES = String.raw`# Rules
-# line head, this rule can't apply to the very first line of the document
+export const DEFAULT_RULES = String.raw`# Converting Rules
+# ---------------------------------------------
+
+# line head converting. 
+# Note: this rule can't apply to the very first line of the document
 '\n》|' -> '\n>|'
 '\n、|' -> '\n/|'
 
-# Two2one
+# CN symbols to EN
 '。。|' -> '.|'
 '》》|' -> '>|'
 '、、|' -> '/|'
@@ -52,15 +47,25 @@ export const DEFAULT_RULES = String.raw`# Rules
 '，，|' -> ',|'
 
 # auto pair and convert
-'《《|》' -> '<|' # this one take higer priority
+'《《|》' -> '<|' # this one take higer priority than the next line
 '《|'     -> '《|》'
 '（（|）' -> '(|)'
 '（|'     -> '（|）'
 
-# auto block
+# auto code block
 '··|'  -> '\`|\`' # inline block
 '\`·|\`' -> '\`\`\`|\n\`\`\`'
 
 # have fun converting!
-# 'hv1111|' -> 'have fun converting!|'
+# 'dpx|' -> 'don\'t panic|'
+
+
+# Selection Insert Rules
+# ---------------------------------------------
+'·'  -> '\`' + '\`'
+'￥'  -> '$' + '$'
+'《'  -> '《' + '》'
+'<'  -> '<' + '>'
+
+
 `.replaceAll("\\`", "`");
