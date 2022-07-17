@@ -18,7 +18,7 @@ Typing trasnformer 支持输入时自动展开预定义的 snippets。
 比如现在配置一条如下的规则
 
 ```
-dpx| -> don't panic|
+'dpx|' -> 'don\'t panic|'
 ```
 
 其中 `|` 表示光标位置。`dpx|` 是触发规则，当输入 `dp` 后，再输入 `x`，将会触发转换，已输入的 `dp` 将被 `don't panic` 替代，光标置于 `panic` 末尾。
@@ -31,17 +31,21 @@ dpx| -> don't panic|
 
 更多的规则可以参考 Typing Transformer 的设置页面，有助于你自己的规则创建!
 
-## 选中区域两侧加入成对符号
+## 可配置的选中区域两侧成对符号插入
 
 当选中一块区域，并输入某些符号时，会自动在选中区域两侧加入对应的成对符号。
 
-目前支持的符号有：
+
+目前默认支持的规则有：
 
 - `selected` + `·` -> `` `selected` ``
 - `selected` + `￥` -> `$selected$`
-- `selected` + `“` 或 `”` -> `“selected”`
 - `selected` + `<`  -> `<selected>`
 - `selected` + `《`  -> `《selected》`
+
+和转换规则一样，也可以通过 Typing Transformer 的设置页面创建自定义规则，基本格式为
+
+`'trigger char' -> 'left-insert-char' + 'right-insert-char'`
 
 ## 自动加入空格
 

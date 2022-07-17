@@ -66,6 +66,4 @@ export const DEFAULT_RULES = String.raw`# Converting Rules
 '￥'  -> '$' + '$'
 '《'  -> '《' + '》'
 '<'  -> '<' + '>'
-
-
 `.replaceAll("\\`", "`");

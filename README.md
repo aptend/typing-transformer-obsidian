@@ -34,17 +34,20 @@ In addition to helping us expand abbreviated phrases, this pattern can also hand
 
 Refer to more rules in the setting page of Typing Transfomer and have fun converting!
 
-## Insert paired symbols to selection
+## Configiurable paired symbols insertion to selection
 
 When an area is selected and some symbols are entered, corresponding paired symbols are automatically added to both sides of the selected area.
 
-The following symbols are currently supported.
+The following symbols are currently supported by default.
 
 - `selected` + `·` -> `` `selected` ``
 - `selected` + `￥` -> `$selected$`
-- `selected` + `“` or `”` -> `“selected”`
 - `selected` + `<`  -> `<selected>`
 - `selected` + `《`  -> `《selected》`
+
+As with the conversion rules, selection rules can also be created in the Typing Transformer's settings page. The basic format is:
+
+`'trigger char' -> 'left-insert-char' + 'right-insert-char'`
 
 
 ## Format line with spaces
