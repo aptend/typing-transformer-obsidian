@@ -41,6 +41,7 @@ const versions = JSON.parse(fs.readFileSync("versions.json", encoding = "utf8"))
 
 const verParts = manifest.version.split(".").map(x => parseInt(x))
 verParts[bump_idx] += 1
+for (let i = bump_idx + 1; i < verParts.length; i++) { verParts[i] = 0 }
 const targetVersion = verParts.join('.')
 minAppVersion = minAppVersion === undefined ? manifest.minAppVersion : minAppVersion
 

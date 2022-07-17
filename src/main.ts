@@ -69,7 +69,7 @@ export default class TypingTransformer extends Plugin {
 			])
 		];
 		this.availablExts.forEach((_, idx) => this.activeExts[idx] = []);
-		
+
 		// parse saved rules
 		this.configureRules(this.settings.convertRules);
 		// activate selected extensions
