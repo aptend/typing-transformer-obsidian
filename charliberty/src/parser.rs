@@ -41,7 +41,7 @@ pub fn block_ranges(line: &str, cursor_pos: usize) -> Vec<usize> {
             }
             if block.as_rule() == Rule::SpecialBlock {
                 block.into_inner().next().map(|inner| {
-                    if matches!(inner.as_rule(), Rule::InlineCode | Rule::InlineMath) {
+                    if matches!(inner.as_rule(), Rule::InlineCode | Rule::InlineMath | Rule::DocLink) {
                         res.push(map_to_char_idx(span.start()));
                         res.push(map_to_char_idx(span.end()) - 1);
                     }

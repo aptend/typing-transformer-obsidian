@@ -18,10 +18,14 @@ emphasisMark = { "*"+ |  "_"+ }
 inlineEmChar = _{!PEEK ~ ANY}
 InlineEm = @{PUSH(emphasisMark) ~ inlineEmChar* ~ POP}
 
+docChar = _{!"]]" ~ !"[[" ~ ANY}
+DocLink = @{"!"? ~ "[[" ~ docChar+ ~ "]]"}
+
 SpecialBlock = {
 	InlineCode
 	| InlineMath
 	| InlineEm
+	| DocLink
 	| ^"a.m"
 	| ^"p.m"
 }
