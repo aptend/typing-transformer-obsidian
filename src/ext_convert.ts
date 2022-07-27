@@ -97,10 +97,10 @@ class ConvRule {
 
         const { left, lanchor } = this;
 
-        const matchRight = prefixOf(left.slice(lanchor + 1), input.slice(insPosBaseHead));
-        const matchLeft = suffixOf(left.slice(0, lanchor - 1), input.slice(0, insPosBaseHead));
-
-        return matchLeft && matchRight;
+        // most rules match left part first
+        if (!suffixOf(left.slice(0, lanchor - 1), input.slice(0, insPosBaseHead))) return false;
+        // left matched and then match right
+        return prefixOf(left.slice(lanchor + 1), input.slice(insPosBaseHead));
     }
 
     // pos is the position of trigger char in the whole documnet
@@ -343,4 +343,8 @@ export class Rules {
         }
         return null;
     }
+
+    // TODO: Add index for rules, some thoughts:
+    // 1. sort by left match string. Note: higher priority problem
+    // 2. pick chars by stride to calc hash to find
 }
