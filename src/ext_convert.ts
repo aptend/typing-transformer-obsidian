@@ -97,10 +97,14 @@ class ConvRule {
 
         const { left, lanchor } = this;
 
-        // most rules match left part first
+        // most rules match left part first, here we check again for good
         if (!suffixOf(left.slice(0, lanchor - 1), input.slice(0, insPosBaseHead))) return false;
         // left matched and then match right
         return prefixOf(left.slice(lanchor + 1), input.slice(insPosBaseHead));
+    }
+
+    leftMatchPart(): string[] {
+        return this.left.slice(0, this.lanchor);
     }
 
     // pos is the position of trigger char in the whole documnet
@@ -301,6 +305,7 @@ export class Rules {
     // fetch side insert rules directly from this map
     sideInsertMap: Map<string, { l: string, r: string }>;
     rules: ConvRule[];
+    index: TrieNode;
     errors: string[];
     trigSet: Set<string>;
     lmax: number;
@@ -320,6 +325,7 @@ export class Rules {
         if (this.errors.length > 0) return;
 
         this.rules = parser.convRules;
+        this.index = newConvRulesIndex(this.rules);
         this.sideInsertMap = parser.sideRules;
 
         let lmax = 0, rmax = 0; // how many chars should be extracted from doc
@@ -336,15 +342,68 @@ export class Rules {
 
     // match a convert rule
     match(input: string, insChar: string, insPosBaseLineHead: number): ConvRule {
-        for (const rule of this.rules) {
-            if (rule.canConvert(input, insChar, insPosBaseLineHead)) {
-                return rule;
+        const leftMatch = input.slice(0, insPosBaseLineHead);
+        const candidates = this.index.collectIdxsAlong(leftMatch + insChar);
+
+        for (const idx of candidates.sort()) {
+            if (this.rules[idx].canConvert(input, insChar, insPosBaseLineHead)) {
+                return this.rules[idx];
             }
         }
         return null;
     }
+}
 
-    // TODO: Add index for rules, some thoughts:
-    // 1. sort by left match string. Note: higher priority problem
-    // 2. pick chars by stride to calc hash to find
+
+function newConvRulesIndex(rules: ConvRule[]): TrieNode {
+    const root = new TrieNode();
+    for (let i = 0; i < rules.length; i++) {
+        root.insert(rules[i], i);
+    }
+    return root;
+}
+
+// A reversed trie
+class TrieNode {
+    next: Map<string, TrieNode>;
+    value: number;
+
+    constructor() {
+        this.next = new Map();
+        this.value = -1;
+    }
+
+    insert(rule: ConvRule, idx: number) {
+        const key = rule.leftMatchPart();
+        let node: TrieNode = this;
+
+        for (let i = key.length - 1; i > -1; i--) {
+            const ch = key[i];
+            if (node.next.has(ch)) {
+                node = node.next.get(ch);
+            } else {
+                const newNode = new TrieNode();
+                node.next.set(ch, newNode);
+                node = newNode;
+            }
+        }
+        node.value = idx
+    }
+
+    collectIdxsAlong(key: string): number[] {
+        const idxs = [];
+
+        let node: TrieNode = this;
+        for (let i = key.length - 1; i > -1; i--) {
+            if (node.value >= 0) { idxs.push(node.value); }
+            node = node.next.get(key[i]);
+            if (node === undefined) { break; }
+        }
+
+        if (node != undefined && node.value >= 0) {
+            idxs.push(node.value);
+        }
+
+        return idxs;
+    }
 }
