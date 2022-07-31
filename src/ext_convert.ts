@@ -345,7 +345,7 @@ export class Rules {
         const leftMatch = input.slice(0, insPosBaseLineHead);
         const candidates = this.index.collectIdxsAlong(leftMatch + insChar);
 
-        // Are you insane? If compareFn omitted, 'the elements are sorted in ascending, ASCII character order.omit' ????????
+        // Are you insane? If compareFn omitted, 'the elements are sorted in ascending, ASCII character order' ????????
         // I am so small in face of Lord Javascript.
         for (const idx of candidates.sort((a, b) => a - b)) {
             if (this.rules[idx].canConvert(input, insChar, insPosBaseLineHead)) {
