@@ -2,7 +2,7 @@ import { TransactionSpec } from "@codemirror/state";
 
 const EOF = "EOF";
 const ANCHOR = "¦";
-
+export const DEL_TRIG = "❌";
 
 class ParseResult<T> {
     constructor(readonly value: T, readonly error: string) { }
@@ -58,6 +58,11 @@ enum RuleType {
     SideRule,
 }
 
+enum ArrowType {
+    Insert, // ->
+    Delete, // -x
+}
+
 class Rule {
     type: RuleType;
     conv: ConvRule;
@@ -72,28 +77,45 @@ class SideRule {
 }
 
 class ConvRule {
-    trig: string;
+    innerTrig: string;
     left: Array<string>;
     right: Array<string>;
     lanchor: number;
     ranchor: number;
     replace: string;
-    constructor(left: string, right: string) {
+    constructor(left: string, right: string, readonly isForDelete: boolean = false) {
+        // Actually, a delete rule is treated like a spcial insert rule.
+        // the trigger char is DEL_TRIG, which can be issued by program
+        // e.g. '(|)' -x '|' will be translated into '(❌|)' -> '|'
         this.left = Array.from(left);
         this.right = Array.from(right);
         this.lanchor = findOnlyAnchor(this.left);
         this.ranchor = findOnlyAnchor(this.right);
-        this.trig = this.left[this.lanchor - 1];
+        if (this.lanchor > 0 && isForDelete) {
+            this.left.splice(this.lanchor, 0, DEL_TRIG);
+            this.lanchor += 1;
+        }
+        this.innerTrig = this.left[this.lanchor - 1];
+
         this.replace = this.right.slice(0, this.ranchor).join('') + this.right.slice(this.ranchor + 1).join('');
     }
 
     get isValid(): boolean {
-        return this.lanchor > 0 && this.ranchor > 0;
+        return this.lanchor > 0 && this.ranchor >= 0;
+    }
+
+    // trigChar is used to fill trigSet
+    get trigChar(): string {
+        if (this.isForDelete) {
+            return this.left[this.lanchor - 2];
+        } else {
+            return this.left[this.lanchor - 1];
+        }
     }
 
     canConvert(inputS: string, insChr: string, insPosBaseHead: number): boolean {
         const input = Array.from(inputS);
-        if (!this.isValid || insChr != this.trig) return false;
+        if (!this.isValid || insChr != this.innerTrig) return false;
 
         const { left, lanchor } = this;
 
@@ -110,7 +132,7 @@ class ConvRule {
     // pos is the position of trigger char in the whole documnet
     mapToChanges(pos: number): TransactionSpec {
         // as the trigger char not inserted into doc yet, the relative pos `lanchor - 1` is mapped to absolute postion `pos`
-        // so the start of modification zone is pos + 1 - lleftChars = pos + 1 - lanchor
+        // so the start of modification zone is pos + 1 - leftChars = pos + 1 - lanchor
         // and the end is start + leftLength - 2(which are trig + ANCHOR)
 
         const { left, lanchor, ranchor } = this;
@@ -200,13 +222,15 @@ class RuleParser {
         }
     }
 
-    private parseMapArrow(): ParseResult<string> {
+    private parseMapArrow(): ParseResult<ArrowType> {
         this.ignoreSpace();
         const first = this.eat(), second = this.eat();
-        if (first != '-' || second != '>') {
-            return Err(`expect ->, found ${first}${second}`);
+        if (first === '-' && second === '>') {
+            return Ok(ArrowType.Insert);
+        } else if (first === '-' && second === 'x') {
+            return Ok(ArrowType.Delete);
         }
-        return Ok('->');
+        return Err(`expect -> or -x, found ${first}${second}`);
     }
 
     private parseComment(): ParseResult<string> {
@@ -249,6 +273,9 @@ class RuleParser {
 
         const rule = new Rule();
         if (this.isSideRule()) {
+            if (r2.value === ArrowType.Delete) {
+                return Err("map arrow for side insert should be ->");
+            }
             const rightInsert = this.parseString();
             if (!rightInsert.isOk) { return Err(rightInsert.error); }
             const sideRule = new SideRule(r1.value, r3.value, rightInsert.value);
@@ -258,9 +285,9 @@ class RuleParser {
             rule.type = RuleType.SideRule;
             rule.side = sideRule;
         } else {
-            const convRule = new ConvRule(r1.value, r3.value);
+            const convRule = new ConvRule(r1.value, r3.value, r2.value === ArrowType.Delete);
             if (!convRule.isValid) {
-                return Err("rule shuold has one and only one non-heading |");
+                return Err("rule shuold has one and only |. And the left rule can't starts with |");
             }
             rule.type = RuleType.ConvRule;
             rule.conv = convRule;
@@ -307,7 +334,8 @@ export class Rules {
     rules: ConvRule[];
     index: TrieNode;
     errors: string[];
-    trigSet: Set<string>;
+    insertTrigSet: Set<string>;
+    deleteTrigSet: Set<string>;
     lmax: number;
     rmax: number;
     constructor(ruletxt: string) {
@@ -319,7 +347,8 @@ export class Rules {
         const parser = new RuleParser(unescapedTxt);
         parser.parse();
         this.rules = [];
-        this.trigSet = new Set<string>();
+        this.insertTrigSet = new Set<string>();
+        this.deleteTrigSet = new Set<string>();
         this.lmax = this.rmax = 0;
         this.errors = parser.errors;
         if (this.errors.length > 0) return;
@@ -330,7 +359,11 @@ export class Rules {
 
         let lmax = 0, rmax = 0; // how many chars should be extracted from doc
         for (const r of this.rules) {
-            this.trigSet.add(r.trig);
+            if (r.isForDelete) {
+                this.deleteTrigSet.add(r.trigChar);
+            } else {
+                this.insertTrigSet.add(r.trigChar);
+            }
             const lmax_ = r.lanchor - 1, rmax_ = r.left.length - 1 - r.lanchor;
             if (lmax_ > lmax) lmax = lmax_;
             if (rmax_ > rmax) rmax = rmax_;
@@ -389,7 +422,7 @@ class TrieNode {
                 node = newNode;
             }
         }
-        node.value = idx
+        node.value = idx;
     }
 
     collectIdxsAlong(key: string): number[] {

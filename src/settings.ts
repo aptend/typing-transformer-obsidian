@@ -46,7 +46,7 @@ const obsidianTheme = EditorView.theme({
         borderRight: "1px solid var(--background-modifier-border)"
     },
     ".cm-lineNumbers, .cm-gutterElement": { color: "inherit" },
-})
+});
 
 
 export interface TypingTransformerSettings {

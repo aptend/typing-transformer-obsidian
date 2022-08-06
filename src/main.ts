@@ -6,7 +6,7 @@ import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm';
 import init, { formatLine, getBlockRanges } from '../liberty-web/charliberty';
 import { PUNCTS } from './const';
 import { initLog, log } from './utils';
-import { Rules } from './ext_convert';
+import { Rules, DEL_TRIG } from './ext_convert';
 import { libertyZone } from './ext_libertyzone';
 import { TypingTransformerSettings, SettingTab, DEFAULT_SETTINGS } from './settings';
 
@@ -172,12 +172,29 @@ export default class TypingTransformer extends Plugin {
 		let shouldHijack = true; // Hijack when some rules match all changes
 		const changes: TransactionSpec[] = [];
 		tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
-			const { trigSet, lmax, rmax } = this.rules;
-			const char = inserted.sliceString(0);
-			if (!shouldHijack || fromA != toA || toB != fromB + 1 || !trigSet.has(char)) {
+			if (!shouldHijack) { return; }
+
+			const { insertTrigSet, deleteTrigSet, lmax, rmax } = this.rules;
+			let char: string;
+			if (fromA === toA && fromB + 1 === toB) {
+				// insert one char
+				char = inserted.sliceString(0);
+				if (!insertTrigSet.has(char)) { shouldHijack = false; }
+			} else if ( fromA + 1 === toA && fromB === toB) {
+				// delete one char
+				const delChar = tr.startState.sliceDoc(fromA, toA);
+				if (!deleteTrigSet.has(delChar)) { shouldHijack = false; }
+				// mock inserting a special DEL_TRIG
+				char = DEL_TRIG;
+				// del: 578 579 578 578 -> insert: 579 579 579 560
+				fromA = toA;
+				fromB += 1;
+				toB = fromB + 1;
+			} else {
 				shouldHijack = false;
-				return;
 			}
+
+			if (!shouldHijack) { return; }
 
 			let leftIdx = fromB - lmax;
 			let insertPosFromLineHead = lmax;
@@ -186,7 +203,7 @@ export default class TypingTransformer extends Plugin {
 				insertPosFromLineHead = lmax + leftIdx;
 				leftIdx = 0;
 			}
-			const input = tr.startState.doc.sliceString(leftIdx, fromB + rmax);
+			const input = tr.startState.sliceDoc(leftIdx, fromB + rmax);
 			const rule = this.rules.match(input, char, insertPosFromLineHead);
 			if (rule != null) {
 				const change = rule.mapToChanges(fromB);
