@@ -22,25 +22,25 @@ docChar = _{!"]]" ~ !"[[" ~ ANY}
 DocLink = @{"!"? ~ "[[" ~ docChar+ ~ "]]"}
 
 SpecialBlock = {
-	InlineCode
-	| InlineMath
-	| InlineEm
-	| DocLink
-	| ^"a.m"
-	| ^"p.m"
+    InlineCode
+    | InlineMath
+    | InlineEm
+    | DocLink
+    | ^"a.m"
+    | ^"p.m"
 }
 
 OtherChar = _{!(MultiSpace | SpecialBlock | Punct | FWPunct | Num | Cn | Eng) ~ ANY}
 Other = {OtherChar+}
 
 Block = _{ 
-	MultiSpace
+    MultiSpace
     | WHITSPACE
-	| SpecialBlock
-	| Punct 
+    | SpecialBlock
+    | Punct 
     | FWPunct
-	| Num
-	| Cn 
+    | Num
+    | Cn 
     | Eng
     | Other
 }

@@ -24,6 +24,6 @@ Block = _{
 1. `Punct` and the block on the left
 
 
-Q: How converting rules work internally?
+Q: How does converting rules work internally?
 
-A: A hand-written rule parser parses user rules and organized them in a trie tree. The generic pattern can be expressed as: **initial string + a trigger character = result string**
+A: A hand-written rule parser parses user rules and organized them in a trie tree. The common pattern can be expressed as: **initial string + a trigger character = result string**
