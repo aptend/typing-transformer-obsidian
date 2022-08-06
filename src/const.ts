@@ -49,8 +49,10 @@ export const DEFAULT_RULES = String.raw`# Converting Rules
 # auto pair and convert
 '《《|》' -> '<|' # this one take higer priority than the next line
 '《|'     -> '《|》'
+'《|》'   -x '|'
 '（（|）' -> '(|)'
 '（|'     -> '（|）'
+'（|）'   -x '|'
 
 # auto code block
 '··|'  -> '\`|\`' # inline block
