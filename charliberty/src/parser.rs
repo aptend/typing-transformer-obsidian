@@ -9,7 +9,8 @@ pub fn insert_liberty(line: &str) -> Result<String> {
     insert_liberty_inner(line, false)
 }
 
-pub fn block_ranges(line: &str, cursor_pos: usize) -> Vec<usize> {
+// block_ranges gives the spans of SpecialBlocks and spans of InlineEm
+pub fn block_ranges(line: &str, cursor_pos: usize) -> (Vec<usize>, Vec<usize>) {
     let total = line.chars().count();
     let cursor_offset = line
         .char_indices()
@@ -31,7 +32,8 @@ pub fn block_ranges(line: &str, cursor_pos: usize) -> Vec<usize> {
         total
     };
 
-    let mut res = vec![];
+    let mut special_spans = vec![];
+    let mut em_spans = vec![];
     if let Ok(pairs) = LineParser::parse(Rule::Line, line) {
         let blocks = pairs.into_iter().next().unwrap().into_inner();
         for block in blocks {
@@ -40,12 +42,15 @@ pub fn block_ranges(line: &str, cursor_pos: usize) -> Vec<usize> {
                 break;
             }
             if block.as_rule() == Rule::SpecialBlock {
-                res.push(map_to_char_idx(span.start()));
-                res.push(map_to_char_idx(span.end()) - 1);
+                special_spans.push(map_to_char_idx(span.start()));
+                special_spans.push(map_to_char_idx(span.end()) - 1);
+            } else if block.as_rule() == Rule::InlineEm {
+                em_spans.push(map_to_char_idx(span.start()));
+                em_spans.push(map_to_char_idx(span.end()) - 1);
             }
         }
     }
-    res
+    (special_spans, em_spans)
 }
 
 fn insert_liberty_inner(line: &str, debug: bool) -> Result<String> {
@@ -101,11 +106,20 @@ mod tests {
     #[test]
     fn test_is_in_block() {
         let text = "起点 `终` at `12` a.m. ignore `another block`";
-        assert_eq!(block_ranges(text, 3), []);
-        assert_eq!(block_ranges(text, 4), [3, 5]); // before 终
-        assert_eq!(block_ranges(text, 11), [3, 5, 10, 13]); // before 12
-        assert_eq!(block_ranges(text, 100), [3, 5, 10, 13, 15, 17, 27, 41]); // show all special blocks
-        assert_eq!(block_ranges("`新的曙光.mz` 我的朋友`觉.z`", 20), [0, 8, 14, 18]);
+        assert_eq!(block_ranges(text, 3).0, []);
+        assert_eq!(block_ranges(text, 4).0, [3, 5]); // before 终
+        assert_eq!(block_ranges(text, 11).0, [3, 5, 10, 13]); // before 12
+        assert_eq!(block_ranges(text, 100).0, [3, 5, 10, 13, 15, 17, 27, 41]); // show all special blocks
+        assert_eq!(block_ranges("`新的曙光.mz` 我的朋友`觉.z`", 20).0, [0, 8, 14, 18]);
+
+
+        let text = "起点 **`终` at `12`** a.m. ignore `another block`";
+        assert_eq!(block_ranges(text, 3), (vec![], vec![]));
+        assert_eq!(block_ranges(text, 4), (vec![], vec![3, 17]));
+        assert_eq!(block_ranges(text, 5), (vec![], vec![3, 17]));
+        assert_eq!(block_ranges(text, 6), (vec![], vec![3, 17])); // before 终
+        assert_eq!(block_ranges(text, 13), (vec![], vec![3, 17])); // before 12
+        assert_eq!(block_ranges(text, 100), (vec![19, 21, 31, 45], vec![3, 17])); // show all
     }
 
     #[derive(Default)]

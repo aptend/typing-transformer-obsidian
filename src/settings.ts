@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, Setting, ButtonComponent, ExtraButtonComponent } from "obsidian";
-import TypingTransformer  from "./main";
+import TypingTransformer from "./main";
 import { DEFAULT_RULES } from "./const";
 import { EditorState, Extension } from "@codemirror/state";
 import { EditorView, ViewUpdate, lineNumbers } from "@codemirror/view";
@@ -117,7 +117,7 @@ export class SettingTab extends PluginSettingTab {
                     plugin.app.workspace.updateOptions();
                 })
             );
-           
+
         this.ruleEditor = createRuleEditorInContainer(containerEl, plugin);
 
     }

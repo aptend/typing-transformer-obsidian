@@ -102,7 +102,7 @@ export default class TypingTransformer extends Plugin {
 
 	configureActiveExtsFromSettings = () => {
 		const activeIds = [ExtID.Conversion, ExtID.SideInsert];
-		const {debug, zoneIndicatorOn, autoFormatOn } = this.settings;
+		const { debug, zoneIndicatorOn, autoFormatOn } = this.settings;
 		debug ? activeIds.push(ExtID.Debug) : null;
 		zoneIndicatorOn ? activeIds.push(ExtID.ZoneIndicator) : null;
 		autoFormatOn ? activeIds.push(ExtID.AutoFormat) : null;
@@ -125,24 +125,40 @@ export default class TypingTransformer extends Plugin {
 			if (pos.start.line <= line.number - 1 && line.number - 1 <= pos.end.line) { return; }
 		}
 
-		const blockRanges = getBlockRanges(line.text, to - from);
-
-		const isInBlock = (offset: number): boolean => {
-			for (let i = blockRanges.length - 2; i > -1; i -= 2) {
+		const checkInBlock = (blocks: Uint32Array, offset: number): { exist: boolean, from: number, to: number } => {
+			for (let i = blocks.length - 2; i > -1; i -= 2) {
 				// a cursor at `offset`, is at the left side of `offset`-th char, so left-opend right-close here
-				if (blockRanges[i] < offset && offset <= blockRanges[i + 1]) return true;
+				if (blocks[i] < offset && offset <= blocks[i + 1]) {
+					return { exist: true, from: blocks[i], to: blocks[i + 1] };
+				}
 			}
-			return false;
+			return { exist: false, from: 0, to: 0 };
 		};
 
-		if (isInBlock(to - from)) { return; } // ...skip inblock
+		const blocks = getBlockRanges(line.text, to - from);
 
-		const txt = state.doc.sliceString(from, to);
+		const r = checkInBlock(blocks.emphasis, to - from);
+		if (r.exist) {
+			// cursor is in *xx*, **xx**, _x_, __xx__ block, only the content needs formatting
+			const txt = state.sliceDoc(from + r.from, from + r.to);
+			let i;
+			for (i = 0; txt[i] != txt[0] && i < r.to; i++) {
+				console.log(i, txt[i]);
+			}
+			return { from: from + r.from + i, to };
+		}
 
+		const spBlocks = blocks.special;
+
+		if (checkInBlock(spBlocks, to - from).exist) { return; } // ...skip special block
+
+		const txt = state.sliceDoc(from, to);
+
+		// find the last segment of the input 
 		// -2 to skip trailing punct, if any
 		for (let i = txt.length - 2; i > 0; i--) {
 			const ch = txt[i];
-			if (ch != ' ' && PUNCTS.has(ch) && !isInBlock(i)) {
+			if (ch != ' ' && PUNCTS.has(ch) && !checkInBlock(spBlocks, i).exist) {
 				return { from: from + i, to };
 			}
 		}
@@ -180,7 +196,7 @@ export default class TypingTransformer extends Plugin {
 				// insert one char
 				char = inserted.sliceString(0);
 				if (!insertTrigSet.has(char)) { shouldHijack = false; }
-			} else if ( fromA + 1 === toA && fromB === toB) {
+			} else if (fromA + 1 === toA && fromB === toB) {
 				// delete one char
 				const delChar = tr.startState.sliceDoc(fromA, toA);
 				if (!deleteTrigSet.has(delChar)) { shouldHijack = false; }
