@@ -1,4 +1,4 @@
-WHITSPACE = _{" "}
+Space = _{" "}
 
 Cn = {'\u{4e00}'..'\u{9fa5}'+}
 Eng = {ASCII_ALPHA+}
@@ -8,24 +8,36 @@ MultiSpace = {" "{2,}}
 FWPunct = {"。"|"，"|"；"|"、"|"！"|"？"|"："}
 Punct = {"."|","|";"|"!"|"?"|":"}
 
+emphasisMark = { "*"+ |  "_"+ }
+inlineEmChar = _{!PEEK ~ ANY}
+InlineEm = @{PUSH(emphasisMark) ~ inlineEmChar* ~ POP}
+
 inlineCodeChar = _{!"`" ~ ANY}
 InlineCode = @{"`" ~ inlineCodeChar* ~ "`"}
 
 inlineMathChar = _{"\\$" | !"$" ~ ANY}
 InlineMath = @{"$" ~ inlineMathChar* ~ "$"}
 
-emphasisMark = { "*"+ |  "_"+ }
-inlineEmChar = _{!PEEK ~ ANY}
-InlineEm = @{PUSH(emphasisMark) ~ inlineEmChar* ~ POP}
-
 docChar = _{!"]]" ~ !"[[" ~ ANY}
 DocLink = @{"!"? ~ "[[" ~ docChar+ ~ "]]"}
 
+
+urlSchema = {("http" ~ "s"?) | "ftp" ~ "://"}
+urlBody = _{!(Space | FWPunct) ~ ANY}
+URL = @{urlSchema ~ urlBody*}
+
+hour = {('0'..'1' ~ '0'..'9') | "2" ~ '0'..'3' }
+minSec = {'0'..'5' ~ '0'..'9'}
+Time = @{hour ~ ":" ~ minSec ~ (":" ~ minSec)? }
+
+
+// If we are editting in a SpecialBlock, auto format won't take effect
 SpecialBlock = {
     InlineCode
     | InlineMath
-    | InlineEm
     | DocLink
+    | URL
+    | Time
     | ^"a.m"
     | ^"p.m"
 }
@@ -35,8 +47,9 @@ Other = {OtherChar+}
 
 Block = _{ 
     MultiSpace
-    | WHITSPACE
+    | Space
     | SpecialBlock
+    | InlineEm
     | Punct 
     | FWPunct
     | Num

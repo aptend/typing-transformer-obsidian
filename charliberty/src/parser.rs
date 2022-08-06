@@ -40,12 +40,8 @@ pub fn block_ranges(line: &str, cursor_pos: usize) -> Vec<usize> {
                 break;
             }
             if block.as_rule() == Rule::SpecialBlock {
-                block.into_inner().next().map(|inner| {
-                    if matches!(inner.as_rule(), Rule::InlineCode | Rule::InlineMath | Rule::DocLink) {
-                        res.push(map_to_char_idx(span.start()));
-                        res.push(map_to_char_idx(span.end()) - 1);
-                    }
-                });
+                res.push(map_to_char_idx(span.start()));
+                res.push(map_to_char_idx(span.end()) - 1);
             }
         }
     }
@@ -108,7 +104,7 @@ mod tests {
         assert_eq!(block_ranges(text, 3), []);
         assert_eq!(block_ranges(text, 4), [3, 5]); // before 终
         assert_eq!(block_ranges(text, 11), [3, 5, 10, 13]); // before 12
-        assert_eq!(block_ranges(text, 100), [3, 5, 10, 13, 27, 41]);
+        assert_eq!(block_ranges(text, 100), [3, 5, 10, 13, 15, 17, 27, 41]); // show all special blocks
         assert_eq!(block_ranges("`新的曙光.mz` 我的朋友`觉.z`", 20), [0, 8, 14, 18]);
     }
 
@@ -159,7 +155,7 @@ mod tests {
                 assert_eq!(
                     &got.as_str(),
                     want,
-                    "bad case is Group {:?} number {} case",
+                    "\nbad case is Group {:?} number {} case, left is got, right is want \n",
                     self.name,
                     i + 1 + start
                 );
