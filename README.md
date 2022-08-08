@@ -15,25 +15,29 @@ Typing Transofrmer has clean internal rules, flexible configuration and provides
 
 Typing Transformer supports automatic expansion of predefined snippets on input.
 
-![conversion](https://user-images.githubusercontent.com/49832303/175769416-c0fce828-cf72-4d2d-b74d-8bf35f78ce27.gif)
+![dpx](https://user-images.githubusercontent.com/103465188/183317743-3ee2a6b2-2b08-427b-886d-d212d4c94fb8.gif)
 
-![dpx](https://user-images.githubusercontent.com/103465188/183317350-af1c321b-e2c8-46db-b73a-58cc517c0de1.gif)
-
-When `dp` is followed by `x`, the conversion is triggered. `dpx` turns into `don't panic`
+When `dp` is followed by `x`, the conversion is triggered and `dpx` turns into `don't panic`.
 
 `dpx|` is the trigger rule and `don\'t panic|` is the conversion result. `|` indicates the cursor position (you can place the cursor anywhere in the trigger rule or conversion result).
 
-*Note: Some special characters such as `|`, `'`, `"` have to be escaped with a backslash.*
+*Note: Some special characters such as `'`, `"`, or the literal `|` character have to be escaped with a backslash.*
 
+---
 In addition to helping us expand abbreviated phrases, this plugin can also handle symbol conversions.
 
 You can auto-pair bracekts:
-- `'<' -> '<|>'` auto-pairs angled brackets and places the cursor in the middle (as indicated by `|`)
+
+![autopair](https://user-images.githubusercontent.com/103465188/183318512-d5c5d65b-5b4e-464e-a453-b39c5775fdc1.gif)
+- `'<|' -> '<|>'` auto-pairs angled brackets and places the cursor in the middle (as indicated by `|`)
 - `'《|' -> '《|》'` auto-pairs Chinese bookmarks and places the cursor in the middle (as indicated by `|`)
 
-or turn fullwidth characters into halfwidth ones.
+or turn full width characters into half width ones:
 
+![width conversion](https://user-images.githubusercontent.com/103465188/183317990-66464aec-9a87-46fe-9809-04d13e77e9b4.gif)
 - `'。。|' -> '.|'` transforms of two Chinese periods `。` into one English period `.`
+
+
 
 **Refer to more rules in the setting page of Typing Transfomer and have fun converting!**
 
