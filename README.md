@@ -17,8 +17,7 @@ Typing Transformer supports automatic expansion of predefined snippets on input.
 
 ![conversion](https://user-images.githubusercontent.com/49832303/175769416-c0fce828-cf72-4d2d-b74d-8bf35f78ce27.gif)
 
-## Examples
-`'dpx|' -> 'don\'t panic|'` 
+![dpx](https://user-images.githubusercontent.com/103465188/183317350-af1c321b-e2c8-46db-b73a-58cc517c0de1.gif)
 
 When `dp` is followed by `x`, the conversion is triggered. `dpx` turns into `don't panic`
 
@@ -28,7 +27,8 @@ When `dp` is followed by `x`, the conversion is triggered. `dpx` turns into `don
 
 In addition to helping us expand abbreviated phrases, this plugin can also handle symbol conversions.
 
-You can auto-pairing symbols:
+You can auto-pair bracekts:
+- `'<' -> '<|>'` auto-pairs angled brackets and places the cursor in the middle (as indicated by `|`)
 - `'《|' -> '《|》'` auto-pairs Chinese bookmarks and places the cursor in the middle (as indicated by `|`)
 
 or turn fullwidth characters into halfwidth ones.
