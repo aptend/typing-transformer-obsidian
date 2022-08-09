@@ -245,7 +245,7 @@ class RuleParser {
             }
         }
         if (ch != '\n' && ch != EOF) {
-            return Err("Expected only one rule in each line, but found " + ch);
+            return Err("Expected only one rule on each line, but found " + ch);
         }
         return Ok("#no content#");
     }
