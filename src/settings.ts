@@ -128,8 +128,7 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
     // source: obsidian-latex-suite setting tab
     const convertRulesSetting = new Setting(container)
         .setName("Rules")
-        .setDesc("Enter converting & selection rules here. Each line is one rule and rules that come first \
-                      have higher priority. Lines starting with \"#\" will be treated as comments and ignored.")
+        .setDesc("Enter conversion, selection, and deletion rules here. Each line is one rule. Rules that come first have higher priority. Lines starting with \"#\" will be treated as comments and ignored.")
         .setClass("rules-text-area");
 
 
