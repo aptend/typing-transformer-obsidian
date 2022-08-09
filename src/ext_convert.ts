@@ -188,7 +188,7 @@ class RuleParser {
     private parseString(): ParseResult<string> {
         this.ignoreSpace();
         if (this.peek() != "'") {
-            return Err("expect a rule string starting with ', found " + this.peek());
+            return Err("Expected a rule starting with ', but found " + this.peek());
         }
         this.eat();
         const result: string[] = [];
@@ -214,7 +214,7 @@ class RuleParser {
                     // parse succ
                     return Ok(result.join(''));
                 case EOF:
-                    return Err("expect a rule string, found EOF");
+                    return Err("Expected a rule, but found EOF");
                 default:
                     result.push(ch);
                     break;
@@ -230,7 +230,7 @@ class RuleParser {
         } else if (first === '-' && second === 'x') {
             return Ok(ArrowType.Delete);
         }
-        return Err(`expect -> or -x, found ${first}${second}`);
+        return Err(`Expected -> or -x, but found ${first}${second}`);
     }
 
     private parseComment(): ParseResult<string> {
@@ -245,7 +245,7 @@ class RuleParser {
             }
         }
         if (ch != '\n' && ch != EOF) {
-            return Err("Expect one rule ending with newline or EOF, found " + ch);
+            return Err("Expected only one rule in each line, but found " + ch);
         }
         return Ok("#no content#");
     }
@@ -274,20 +274,20 @@ class RuleParser {
         const rule = new Rule();
         if (this.isSideRule()) {
             if (r2.value === ArrowType.Delete) {
-                return Err("map arrow for side insert should be ->");
+                return Err("Expected ->, but found -x (selection rules cannot be deletion rules)");
             }
             const rightInsert = this.parseString();
             if (!rightInsert.isOk) { return Err(rightInsert.error); }
             const sideRule = new SideRule(r1.value, r3.value, rightInsert.value);
             if (!sideRule.isValid) {
-                return Err("the trigger of a side insert rule should be a single char");
+                return Err("Expected one char, but found multiple (the selection rule trigger char can only be a single character)");
             }
             rule.type = RuleType.SideRule;
             rule.side = sideRule;
         } else {
             const convRule = new ConvRule(r1.value, r3.value, r2.value === ArrowType.Delete);
             if (!convRule.isValid) {
-                return Err("rule shuold has one and only |. And the left rule can't starts with |");
+                return Err("Expected one | on each side, but found multiple. OR Invalid Placement of |. Note: the left side can't start with |.");
             }
             rule.type = RuleType.ConvRule;
             rule.conv = convRule;
