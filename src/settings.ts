@@ -125,11 +125,25 @@ export class SettingTab extends PluginSettingTab {
 
 
 function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTransformer): EditorView {
-    // source: obsidian-latex-suite setting tab
+    // source: obsidian-latex-suite setting tab, thanks a lot.
+    const fragment = document.createDocumentFragment();
+    const line1 = document.createElement("div");
+
+    line1.setText("Enter conversion, selection, and deletion rules here. NOTES:");
+    const ol = document.createElement("ol")
+    const note1 = document.createElement("li");
+    note1.setText("Each line is one rule. Rules that come first have higher priority.");
+    ol.appendChild(note1)
+    const note2 = document.createElement("li");
+    note2.setText("Lines starting with \"#\" will be treated as comments and ignored.");
+    ol.appendChild(note2)
+
+    // TODO: add more desc about escape
+    fragment.append(line1, ol);
+  
     const convertRulesSetting = new Setting(container)
         .setName("Rules")
-        .setDesc("Enter converting & selection rules here. Each line is one rule and rules that come first \
-                      have higher priority. Lines starting with \"#\" will be treated as comments and ignored.")
+        .setDesc(fragment)
         .setClass("rules-text-area");
 
 
