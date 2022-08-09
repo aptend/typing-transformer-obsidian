@@ -22,6 +22,8 @@
 
 .rules-editor-wrapper .cm-editor {
     height: 20em;
+    resize: vertical;
+    overflow: auto;
     font-size: var(--font-inputs);
     text-align: left;
     outline: none !important;
