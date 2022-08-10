@@ -38,7 +38,7 @@ export default class TypingTransformer extends Plugin {
 	settings: TypingTransformerSettings;
 	specialSections: Pos[];
 	rules: Rules;
-	rulesErr: string;
+	rulesErrs: string[];
 	availablExts: Extension[];
 	activeExts: Extension[];
 
@@ -94,9 +94,9 @@ export default class TypingTransformer extends Plugin {
 	configureRules = (ruleString: string) => {
 		this.rules = new Rules(ruleString);
 		if (this.rules.errors.length > 0) {
-			this.rulesErr = this.rules.errors.join('\n');
+			this.rulesErrs = this.rules.errors;
 		} else {
-			this.rulesErr = "";
+			this.rulesErrs = [];
 		}
 	};
 
