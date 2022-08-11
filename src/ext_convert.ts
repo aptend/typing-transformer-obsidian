@@ -107,12 +107,12 @@ class ConvRule {
     invalidReasons(): string {
         const reasons = [];
         if (this.lanchor < 0) {
-            reasons.push(`Expected one | on left side, but found ${this.lanchor == -1 ? "zero" : "multiple"}`);
+            reasons.push(`Expected one | on left side, but found ${this.lanchor == -1 ? "none" : "multiple"}`);
         } else if (this.lanchor === 0) {
-            reasons.push("Invalid Placement of |. Note: the left side can't start with |.");
+            reasons.push("Invalid Placement of | on the left side. Note: left side cannot start with |");
         }
         if (this.ranchor < 0) {
-            reasons.push(`Expected one | on right side, but found ${this.ranchor == -1 ? "zero" : "multiple"}`);
+            reasons.push(`Expected one | on right side, but found ${this.ranchor == -1 ? "none" : "multiple"}`);
         }
         return reasons.join("\n");
     }
@@ -228,9 +228,9 @@ class RuleParser {
                     // parse succ
                     return Ok(result.join(''));
                 case "\n":
-                    return Err("Rule can't contain newline directly. Note: escape newline as '\\n'");
+                    return Err("Expected a rule ending with ', but found newline. Note: escape intentional newline with '\\n'");
                 case EOF:
-                    return Err("Expected a rule, but found \"EOF\"");
+                    return Err("Expected a rule ending with ', but found nothing");
                 default:
                     result.push(ch);
                     break;
@@ -290,13 +290,13 @@ class RuleParser {
         const rule = new Rule();
         if (this.isSideRule()) {
             if (r2.value === ArrowType.Delete) {
-                return Err("Expected ->, but found -x (selection rules cannot be deletion rules)");
+                return Err("Expected ->, but found -x. Note: selection rules cannot be deletion rules");
             }
             const rightInsert = this.parseString();
             if (!rightInsert.isOk) { return Err(rightInsert.error); }
             const sideRule = new SideRule(r1.value, r3.value, rightInsert.value);
             if (!sideRule.isValid) {
-                return Err("Expected one char, but found multiple (the selection rule trigger char can only be a single character)");
+                return Err("Expected one char, but found multiple. Note: the selection rule trigger char can only be a single character");
             }
             rule.type = RuleType.SideRule;
             rule.side = sideRule;
@@ -324,7 +324,7 @@ class RuleParser {
                 const rRes = this.parseOne();
                 if (!rRes.isOk) {
                     for (const msg of rRes.error.split("\n")) {
-                        this.errors.push(`error: line ${line}: ` + msg);
+                        this.errors.push(`line ${line}: ` + msg);
                     }
                 } else if (rRes.value.type === RuleType.ConvRule) {
                     this.convRules.push(rRes.value.conv);
