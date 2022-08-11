@@ -9,7 +9,7 @@ $(liberty-js): $(liberty-src)
 	node ./scripts/wasm_post.js
 
 
-.PHONY: wasm build dev
+.PHONY: wasm build dev lint
 
 wasm:
 	wasm-pack build charliberty -t web -d ../$(liberty-dst)
@@ -20,3 +20,6 @@ build: $(liberty-js)
 
 dev: $(liberty-js)
 	npm run dev
+
+lint:
+	eslint src --fix

@@ -125,11 +125,24 @@ export class SettingTab extends PluginSettingTab {
 
 
 function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTransformer): EditorView {
-    // source: obsidian-latex-suite setting tab
+    // source: obsidian-latex-suite setting tab, thanks a lot.
+    const fragment = document.createDocumentFragment();
+    const line1 = document.createElement("div");
+    line1.setText("Enter conversion, selection, and deletion rules here. NOTES:");
+    const ol = document.createElement("ol");
+    const note1 = document.createElement("li");
+    note1.setText("Each line is one rule. Rules that come first have higher priority.");
+    ol.appendChild(note1);
+    const note2 = document.createElement("li");
+    note2.setText("Lines starting with \"#\" will be treated as comments and ignored.");
+    ol.appendChild(note2);
+
+    // TODO: add more desc about escape
+    fragment.append(line1, ol);
+  
     const convertRulesSetting = new Setting(container)
         .setName("Rules")
-        .setDesc("Enter converting & selection rules here. Each line is one rule and rules that come first \
-                      have higher priority. Lines starting with \"#\" will be treated as comments and ignored.")
+        .setDesc(fragment)
         .setClass("rules-text-area");
 
 
@@ -146,12 +159,17 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
     validityText.addClass("setting-item-description");
     validityText.addClass("rules-editor-validity-txt");
 
-    function updateValidityIndicator(success: boolean, err: string) {
+    function updateValidityIndicator(success: boolean, errs: string[]) {
         validityIndicator.setIcon(success ? "checkmark" : "cross");
         validityIndicator.extraSettingsEl.removeClass(success ? "invalid" : "valid");
         validityIndicator.extraSettingsEl.addClass(success ? "valid" : "invalid");
-        validityText.setText("");
-        validityText.setText(success ? "Saved" : err);
+        const fragment = document.createDocumentFragment();
+        for (const err of errs) {
+            const line = document.createElement("div");
+            line.setText(err);
+            fragment.append(line);
+        }
+        validityText.setText(success ? "Saved" : fragment);
     }
 
     const extensions: Extension[] = [
@@ -171,10 +189,10 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
 
     const feedRules = async (newRule: string) => {
         plugin.configureRules(newRule);
-        if (plugin.rulesErr != "") {
-            updateValidityIndicator(false, plugin.rulesErr);
+        if (plugin.rulesErrs.length != 0) {
+            updateValidityIndicator(false, plugin.rulesErrs);
         } else {
-            updateValidityIndicator(true, "");
+            updateValidityIndicator(true, []);
             plugin.settings.convertRules = newRule;
             await plugin.saveSettings();
         }
