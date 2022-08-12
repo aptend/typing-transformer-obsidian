@@ -20,7 +20,7 @@ function Err<T>(err: string): ParseResult<T> {
     return new ParseResult(null, err);
 }
 
-
+// return -1 if no anchar, return -2 if multiple anchors, otherwise return position of the anchor
 function findOnlyAnchor(s: Array<string>): number {
     let res = -1, idx = 0;
     for (const ch of s) {
@@ -28,7 +28,7 @@ function findOnlyAnchor(s: Array<string>): number {
             if (res == -1) {
                 res = idx;
             } else {
-                return -1;
+                return -2;
             }
         }
         idx++;
@@ -104,6 +104,19 @@ class ConvRule {
         return this.lanchor > 0 && this.ranchor >= 0;
     }
 
+    invalidReasons(): string {
+        const reasons = [];
+        if (this.lanchor < 0) {
+            reasons.push(`Expected one | on left side, but found ${this.lanchor == -1 ? "none" : "multiple"}`);
+        } else if (this.lanchor === 0) {
+            reasons.push("Invalid Placement of | on the left side. Note: left side cannot start with |");
+        }
+        if (this.ranchor < 0) {
+            reasons.push(`Expected one | on right side, but found ${this.ranchor == -1 ? "none" : "multiple"}`);
+        }
+        return reasons.join("\n");
+    }
+
     // trigChar is used to fill trigSet
     get trigChar(): string {
         if (this.isForDelete) {
@@ -147,6 +160,7 @@ class ConvRule {
     }
 }
 
+const readable = JSON.stringify;
 
 class RuleParser {
     input: string[];
@@ -188,7 +202,7 @@ class RuleParser {
     private parseString(): ParseResult<string> {
         this.ignoreSpace();
         if (this.peek() != "'") {
-            return Err("Expected a rule starting with ', but found " + this.peek());
+            return Err("Expected a rule starting with ', but found " + readable(this.peek()));
         }
         this.eat();
         const result: string[] = [];
@@ -213,8 +227,10 @@ class RuleParser {
                 case "'":
                     // parse succ
                     return Ok(result.join(''));
+                case "\n":
+                    return Err("Expected a rule ending with ', but found newline. Note: escape intentional newline with '\\n'");
                 case EOF:
-                    return Err("Expected a rule, but found EOF");
+                    return Err("Expected a rule ending with ', but found nothing");
                 default:
                     result.push(ch);
                     break;
@@ -230,7 +246,7 @@ class RuleParser {
         } else if (first === '-' && second === 'x') {
             return Ok(ArrowType.Delete);
         }
-        return Err(`Expected -> or -x, but found ${first}${second}`);
+        return Err(`Expected -> or -x, but found ${readable(first)}${readable(second)}`);
     }
 
     private parseComment(): ParseResult<string> {
@@ -245,7 +261,7 @@ class RuleParser {
             }
         }
         if (ch != '\n' && ch != EOF) {
-            return Err("Expected only one rule in each line, but found " + ch);
+            return Err("Expected only one rule in each line, but found " + readable(ch));
         }
         return Ok("#no content#");
     }
@@ -274,20 +290,20 @@ class RuleParser {
         const rule = new Rule();
         if (this.isSideRule()) {
             if (r2.value === ArrowType.Delete) {
-                return Err("Expected ->, but found -x (selection rules cannot be deletion rules)");
+                return Err("Expected ->, but found -x. Note: selection rules cannot be deletion rules");
             }
             const rightInsert = this.parseString();
             if (!rightInsert.isOk) { return Err(rightInsert.error); }
             const sideRule = new SideRule(r1.value, r3.value, rightInsert.value);
             if (!sideRule.isValid) {
-                return Err("Expected one char, but found multiple (the selection rule trigger char can only be a single character)");
+                return Err("Expected one char, but found multiple. Note: the selection rule trigger char can only be a single character");
             }
             rule.type = RuleType.SideRule;
             rule.side = sideRule;
         } else {
             const convRule = new ConvRule(r1.value, r3.value, r2.value === ArrowType.Delete);
             if (!convRule.isValid) {
-                return Err("Expected one | on each side, but found multiple. OR Invalid Placement of |. Note: the left side can't start with |.");
+                return Err(convRule.invalidReasons());
             }
             rule.type = RuleType.ConvRule;
             rule.conv = convRule;
@@ -307,7 +323,9 @@ class RuleParser {
                 // this line has something, go parsing
                 const rRes = this.parseOne();
                 if (!rRes.isOk) {
-                    this.errors.push(`error: line ${line}: ` + rRes.error);
+                    for (const msg of rRes.error.split("\n")) {
+                        this.errors.push(`line ${line}: ` + msg);
+                    }
                 } else if (rRes.value.type === RuleType.ConvRule) {
                     this.convRules.push(rRes.value.conv);
                 } else {
