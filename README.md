@@ -4,19 +4,26 @@
 
 ---
 
-Typing Transformer is inspired by [Easy Typing](https://github.com/Yaozhuwa/easy-typing-obsidian), thanks to Easy Typing!
+Typing Transformer is inspired by [Easy Typing](https://github.com/Yaozhuwa/easy-typing-obsidian). Thanks to Easy Typing!
 
-Typing Transofrmer has clean internal rules, flexible configuration and allows users to have a customized auto-formatting experience as typing
+Typing Transformer has clean internal rules, flexible configuration and allows users to have a customized auto-formatting experience as typing.
 
 **Note: The implementation depends on CodeMirror6 and only works in non-legacy mode in Obsidian 0.14.15 or later**
 
-## Configurable input conversion
-
+## Input Conversion
 
 Typing Trasnformer supports automatic expansion of predefined snippets on input.
 
 ![conversion](https://user-images.githubusercontent.com/49832303/175769416-c0fce828-cf72-4d2d-b74d-8bf35f78ce27.gif)
 
+A conversion rule has the following syntax:
+
+```
+'<trigger rule>' -> '<conversion result>'
+```
+*Anything in angled brackets are replaced*
+
+%%
 For example, a rule is now configured as follows
 
 ```
@@ -29,8 +36,8 @@ where `|` indicates the cursor position. `dpx|` is the trigger rule, when `dp` i
 In addition to helping us expand abbreviated phrases, this feature can also handle symbol conversions, such as auto-pairing symbols, or turning fullwidth symbols into halfwidth ones, examples:
 - `'《|' -> '《|》'` rule describes the automatic matching of Chinese book marks and placing the cursor in the middle
 - `'。。|' -> '.|'` rule describes the transformation of two Chinese periods into one English period
-
-**Refer to more rules in the setting page of Typing Transfomer and have fun converting!**
+%%
+**More examples can be found in the settings page of this plugin. Have fun converting!**
 
 ## Configiurable paired symbols insertion to selection
 
