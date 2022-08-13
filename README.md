@@ -1,7 +1,5 @@
 <p align="right"><strong>English</strong> | <a href="https://github.com/aptend/typing-transformer-obsidian/blob/main/README-CN.md">中文</a></p>
 
----
-
 # Typing Transformer Obsidian
 
 Typing Transformer is the plugin that will literally transform your typing.
@@ -17,14 +15,18 @@ Typing Transformer is inspired by [Easy Typing](https://github.com/Yaozhuwa/easy
 <!-- TODO: needs a better gif -->
 
 Typing Transformer currently supports three types of transformation rules:
+1. [input conversion rules](https://github.com/caasion/typing-transformer-obsidian/tree/docs#input-conversion-rules)
+2. [deletion rules](https://github.com/caasion/typing-transformer-obsidian/tree/docs#deletion-rules-tbd)
+3. [selection rules](https://github.com/caasion/typing-transformer-obsidian/tree/docs#selection-rules)
 
-1. [input conversion rules](https://github.com/caasion/typing-transformer-obsidian/edit/docs/README.md#input-conversion-rules)
-2. [deletion rules](https://github.com/caasion/typing-transformer-obsidian/edit/docs/README.md#deletion-rules-tbd)
-3. [selection rules](https://github.com/caasion/typing-transformer-obsidian/edit/docs/README.md#selection-rules)
-
-In addition, Typing Transformer has auto-formatting features such as [inserting spaces](https://github.com/caasion/typing-transformer-obsidian/edit/docs/README.md#formatting-lines-with-spaces) between multiple languages and certain symbols.
+In addition, Typing Transformer has auto-formatting features such as [inserting spaces](https://github.com/caasion/typing-transformer-obsidian/tree/docs#formatting-lines-with-spaces) between multiple languages and certain symbols.
 
 <!-- NOTE TO APTEND: You will need to replace these links with your own that link to your repository -->
+
+<!-- TODO: Latest update features 
+## What's New in Version x.x.x?
+- Deletion Rules
+-->
 
 ## Input Conversion Rules
 
