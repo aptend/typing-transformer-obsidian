@@ -64,6 +64,7 @@ fn insert_liberty_inner(line: &str, debug: bool) -> Result<String> {
 
     let first = blocks.peek().unwrap();
     let mut prev_block_kind = first.as_rule();
+    let mut prev_block_end_pos = first.as_span().end();
     result.push_str(first.as_str());
 
     if debug {
@@ -83,9 +84,15 @@ fn insert_liberty_inner(line: &str, debug: bool) -> Result<String> {
             | (_, Rule::FWPunct) | (Rule::FWPunct, _)
             // no space before punct
             | (_, Rule::Punct)
-            // keep other intact
+             => result.push_str(block.as_str()),
+            // keep other and its surrounding space intact
             | (_, Rule::Other) | (Rule::Other, _)
              => {
+                // a single space is default ignored, check add it back
+                // stay in awe of the UNKNOWN
+                if block.as_span().start() == prev_block_end_pos + 1 {
+                    result.push(' ')
+                }
                 result.push_str(block.as_str());
             }
             (_, _) => {
@@ -95,6 +102,7 @@ fn insert_liberty_inner(line: &str, debug: bool) -> Result<String> {
             },
         }
         prev_block_kind = block.as_rule();
+        prev_block_end_pos = block.as_span().end();
     }
     Ok(result)
 }
@@ -110,8 +118,10 @@ mod tests {
         assert_eq!(block_ranges(text, 4).0, [3, 5]); // before 终
         assert_eq!(block_ranges(text, 11).0, [3, 5, 10, 13]); // before 12
         assert_eq!(block_ranges(text, 100).0, [3, 5, 10, 13, 15, 17, 27, 41]); // show all special blocks
-        assert_eq!(block_ranges("`新的曙光.mz` 我的朋友`觉.z`", 20).0, [0, 8, 14, 18]);
-
+        assert_eq!(
+            block_ranges("`新的曙光.mz` 我的朋友`觉.z`", 20).0,
+            [0, 8, 14, 18]
+        );
 
         let text = "起点 **`终` at `12`** a.m. ignore `another block`";
         assert_eq!(block_ranges(text, 3), (vec![], vec![]));
@@ -119,7 +129,8 @@ mod tests {
         assert_eq!(block_ranges(text, 5), (vec![], vec![3, 17]));
         assert_eq!(block_ranges(text, 6), (vec![], vec![3, 17])); // before 终
         assert_eq!(block_ranges(text, 13), (vec![], vec![3, 17])); // before 12
-        assert_eq!(block_ranges(text, 100), (vec![19, 21, 31, 45], vec![3, 17])); // show all
+        assert_eq!(block_ranges(text, 100), (vec![19, 21, 31, 45], vec![3, 17]));
+        // show all
     }
 
     #[derive(Default)]
@@ -244,6 +255,15 @@ mod tests {
                     "秦-时moon 汉时%关 ，  万里`长征人no 还",
                     "秦-时 moon 汉时%关，  万里`长征人 no 还",
                 ),
+                (
+                    "1 + 1 is a hard problem",
+                    "1 + 1 is a hard problem",
+                ),
+                (
+                    "1+1 is a hard problem",
+                    "1+1 is a hard problem",
+                )
+
             ])
             .test();
     }
