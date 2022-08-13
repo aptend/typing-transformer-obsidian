@@ -38,11 +38,12 @@ SpecialBlock = {
     | DocLink
     | URL
     | Time
+    | Num  // Num block might contain . which can't be treated like a punct
     | ^"a.m"
     | ^"p.m"
 }
 
-OtherChar = _{!(MultiSpace | SpecialBlock | Punct | FWPunct | Num | Cn | Eng) ~ ANY}
+OtherChar = _{!(MultiSpace | SpecialBlock | Punct | FWPunct | Cn | Eng) ~ ANY}
 Other = {OtherChar+}
 
 Block = _{ 
