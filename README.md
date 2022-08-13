@@ -1,14 +1,12 @@
-
-
 <p align="right"><strong>English</strong> | <a href="https://github.com/aptend/typing-transformer-obsidian/blob/main/README-CN.md">中文</a></p>
 
 ---
 
-Typing Transformer is inspired by [Easy Typing](https://github.com/Yaozhuwa/easy-typing-obsidian). Thanks to Easy Typing!
-
 Typing Transformer is the plugin that will literally transform your typing.
 
 Typing Transformer has clean internal rules, flexible configuration and allows users to have a customized auto-formatting experience as typing.
+
+Typing Transformer is inspired by [Easy Typing](https://github.com/Yaozhuwa/easy-typing-obsidian). Thanks to Easy Typing!
 
 **Note: The implementation depends on CodeMirror6 and only works in non-legacy mode in Obsidian 0.14.15 or later**
 
@@ -17,8 +15,8 @@ Typing Transformer has clean internal rules, flexible configuration and allows u
 There are three main types of rules: 
 
 1. input conversion rules
-2. selection rules
-3. deletion rules
+2. deletion rules
+3. selection rules
 
 ## Input Conversion Rules
 
@@ -43,16 +41,35 @@ Everything will then be replaced with the result: `don\'t panic|`.
 
 In this case, `|` indicates the cursor position after the conversion. (You can place it anywhere in the text.)
 ### Example 2: Auto-pairing of symbols
-gif with rule
+gif
 
+The trigger is `《`.
+
+The rule auto-pairs Chinese bookmarks and places the cursor in the middle.
 
 explanation
 ### Example 3: Transformation of two full width characters into one half width character
-gif with rule
+gif 
 
-explanation
+This rule works with the one above.
+
+1. When a `《` is entered, the second rule auto-pairs it.
+2. When another `《` is entered, the first rule will take priority because it matches. 
+3. The auto-pair rule won't do anything yet. This results in `《《|》`.
+4. This is then converted by the first rule, by the first rule, into `<`.
 
 **More examples can be found in the settings page of this plugin. Have fun converting!**
+
+## Deletion Rules (tbd)
+
+A conversion rule has the following syntax:
+
+```
+'<deletion trigger>' -x '<result>'
+```
+*Anything in angled brackets are replaced*
+
+Deletion rules are essentially the reverse of input conversion rules, but the deletion of a certain character acts as the trigger.
 
 ## Selection Rules
 
@@ -66,23 +83,18 @@ The syntax of a selection rule is as follows:
 When text is selected and **one** character is entered, Typing Transformer will help you insert two characters on each side of the selection.
 
 ### Example 1: Selection auto-pair of <angled brackets>
+gif
 
+The auto-pairing of angled brackets make typing html a lot easier!
 
+These rules are supported by default:
 
-%%
-When an area is selected and some symbols are entered, corresponding paired symbols are automatically added to both sides of the selected area.
-
-The following symbols are currently supported by default.
-
-- `selected` + `·` -> `` `selected` ``
-- `selected` + `￥` -> `$selected$`
-- `selected` + `<`  -> `<selected>`
-- `selected` + `《`  -> `《selected》`
-
-As with the conversion rules, **selection rules can also be created in the Typing Transformer's settings page**. The basic format is:
-
-`'trigger char' -> 'left-insert-char' + 'right-insert-char'`
-%%
+```
+'·'  -> '\`' + '\`'
+'￥'  -> '$' + '$'
+'《'  -> '《' + '》'
+'<'  -> '<' + '>'
+```
 
 ## Format line with spaces
 
