@@ -47,12 +47,33 @@ let wasmPlugin = {
 }
 
 
+function copyIfChanged(srcfile, destfile) {
+	fs.watchFile(srcfile, { interval: 1000 }, (c, p) => {
+		if (c.mtimeMs > p.mtimeMs) {
+			console.log("[watch] copy newer styles.css")
+			fs.copyFileSync(srcfile, destfile)
+		}
+	})
+}
+
+let watching = false;
+
+let copyFile = {
+	name: 'copy-plugin-files',
+	setup(build) {
+		build.onStart(() => {
+			if (prod || watching) { return; }
+			watching = true;
+			copyIfChanged("./styles.css", path.join(pluginDir, "styles.css"))
+		})
+	},
+}
 
 esbuild.build({
 	banner: {
 		js: banner,
 	},
-	plugins: [wasmPlugin],
+	plugins: [wasmPlugin, copyFile],
 	entryPoints: ['src/main.ts'],
 	bundle: true,
 	external: [
@@ -81,6 +102,6 @@ esbuild.build({
 	logLevel: "info",
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
-	outfile: path.join(pluginDir, 'main.js')
+	outfile: path.join(pluginDir, 'main.js'),
 }).catch(() => process.exit(1))
 
