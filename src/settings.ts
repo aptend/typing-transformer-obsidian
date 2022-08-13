@@ -51,7 +51,6 @@ const obsidianTheme = EditorView.theme({
 
 export interface TypingTransformerSettings {
     debug: boolean,
-    rulesOn: boolean,
     convertRules: string,
     autoFormatOn: boolean,
     zoneIndicatorOn: boolean,
@@ -59,7 +58,6 @@ export interface TypingTransformerSettings {
 
 export const DEFAULT_SETTINGS: TypingTransformerSettings = {
     debug: false,
-    rulesOn: true,
     convertRules: DEFAULT_RULES,
     zoneIndicatorOn: true,
     autoFormatOn: true,
