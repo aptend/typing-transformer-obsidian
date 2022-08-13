@@ -35,6 +35,6 @@ pub fn get_block_ranges(line: &str, cursor_pos: usize) -> Blocks {
     let (sp, em) = block_ranges(line, cursor_pos);
     Blocks {
         special: sp,
-        emphasis: em
+        emphasis: em,
     }
 }
