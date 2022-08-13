@@ -131,9 +131,8 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
     const ol = fragment.createEl("ol");
     ol.createEl("li", { text: "Each line is one rule. Rules that come first have higher priority." }); //note 1
     ol.createEl("li", { text: "Lines starting with \"#\" will be treated as comments and ignored." }); //note 2
+    ol.createEl("li", { text: "Certain characters ' | \\ must be escaped with backslahes \\."}) //note 3
 
-    // TODO: add more desc about escape
-  
     const convertRulesSetting = new Setting(container)
         .setName("Rules")
         .setDesc(fragment)
