@@ -127,24 +127,16 @@ export class SettingTab extends PluginSettingTab {
 function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTransformer): EditorView {
     // source: obsidian-latex-suite setting tab, thanks a lot.
     const fragment = document.createDocumentFragment();
-    const line1 = document.createElement("div");
-    line1.setText("Enter conversion, selection, and deletion rules here. NOTES:");
-    const ol = document.createElement("ol");
-    const note1 = document.createElement("li");
-    note1.setText("Each line is one rule. Rules that come first have higher priority.");
-    ol.appendChild(note1);
-    const note2 = document.createElement("li");
-    note2.setText("Lines starting with \"#\" will be treated as comments and ignored.");
-    ol.appendChild(note2);
+    fragment.createEl("span", { text: "Enter conversion, selection, and deletion rules here. NOTES:" }); //line 1
+    const ol = fragment.createEl("ol");
+    ol.createEl("li", { text: "Each line is one rule. Rules that come first have higher priority." }); //note 1
+    ol.createEl("li", { text: "Lines starting with \"#\" will be treated as comments and ignored." }); //note 2
+    ol.createEl("li", { text: "Certain characters ' | \\ must be escaped with backslahes \\."}) //note 3
 
-    // TODO: add more desc about escape
-    fragment.append(line1, ol);
-  
     const convertRulesSetting = new Setting(container)
         .setName("Rules")
         .setDesc(fragment)
         .setClass("rules-text-area");
-
 
     const customCSSWrapper = convertRulesSetting.controlEl.createDiv("rules-editor-wrapper");
     const rulesFooter = convertRulesSetting.controlEl.createDiv("rules-footer");
@@ -155,9 +147,8 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
         .setIcon("checkmark")
         .extraSettingsEl.addClass("rules-editor-validity-indicator");
 
-    const validityText = validity.createDiv("rules-editor-validity-text");
-    validityText.addClass("setting-item-description");
-    validityText.addClass("rules-editor-validity-txt");
+    const validityText = validity.createDiv("rules-editor-validity-text")
+    validityText.classList.add("setting-item-description", "rules-editor-validity-txt");
 
     function updateValidityIndicator(success: boolean, errs: string[]) {
         validityIndicator.setIcon(success ? "checkmark" : "cross");
@@ -165,9 +156,7 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
         validityIndicator.extraSettingsEl.addClass(success ? "valid" : "invalid");
         const fragment = document.createDocumentFragment();
         for (const err of errs) {
-            const line = document.createElement("div");
-            line.setText(err);
-            fragment.append(line);
+            fragment.createEl("div", { text: err });
         }
         validityText.setText(success ? "Saved" : fragment);
     }
