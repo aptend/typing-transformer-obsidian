@@ -53,7 +53,6 @@ The trigger is `《`.
 
 The rule auto-pairs Chinese bookmarks and places the cursor in the middle.
 
-explanation
 ### Example 3: Transformation of two full width characters into one half width character
 ![](https://github.com/caasion/typing-transformer-obsidian/blob/docs/docs/auto-pair%20and%20transformation.gif)
 
@@ -82,11 +81,11 @@ Deletion rules are essentially the reverse of input conversion rules, but the de
 The syntax of a selection rule is as follows:
 
 ```
-'<trigger (one char)>' -> '<left insert>' + '<right insert>'
+'<trigger>' -> '<left insert>' + '<right insert>'
 ```
 *Anything in angled brackets are replaced*
 
-When text is selected and **one** character is entered, Typing Transformer will help you insert two characters on each side of the selection.
+When text is selected and the trigger characters are entered, Typing Transformer will help you insert two characters on each side of the selection.
 
 ### Example 1: Selection auto-pair of <angled brackets>
 ![](https://github.com/caasion/typing-transformer-obsidian/blob/docs/docs/selection.gif)
