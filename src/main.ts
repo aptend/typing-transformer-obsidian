@@ -245,8 +245,8 @@ export default class TypingTransformer extends Plugin {
 				return;
 			}
 			const insert = this.rules.sideInsertMap.get(char);
-			changes.push({ changes: { from: fromA, to: fromA, insert: insert.l }, annotations: ProgramTxn.of(true) });
-			changes.push({ changes: { from: toA, to: toA, insert: insert.r }, annotations: ProgramTxn.of(true) });
+			changes.push({ changes: { from: fromA, insert: insert.l }, annotations: ProgramTxn.of(true) });
+			changes.push({ changes: { from: toA, insert: insert.r }, annotations: ProgramTxn.of(true) });
 		});
 
 		if (shouldHijack) { tr = tr.startState.update(...changes); }
