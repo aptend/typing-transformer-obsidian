@@ -140,8 +140,8 @@ export default class TypingTransformer extends Plugin {
 			// cursor is in *xx*, **xx**, _x_, __xx__ block, only the content needs formatting
 			const txt = state.sliceDoc(from + r.from, from + r.to);
 			let i;
-			for (i = 0; txt[i] != txt[0] && i < r.to; i++) {
-				console.log(i, txt[i]);
+			for (i = 0; txt[i] == txt[0] && i < r.to; i++) {
+				log("format: skip emphasis head", i, txt[i]);
 			}
 			return { from: from + r.from + i, to };
 		}
@@ -175,8 +175,8 @@ export default class TypingTransformer extends Plugin {
 			if (trimmed === '') { return; } // skip empty string
 			const lspace = toUpdate.length - toUpdate.trimStart().length;
 			const rspace = toUpdate.length - toUpdate.trimEnd().length;
-			log("toUpdate: %s, lspace: %d, rspace: %d", toUpdate, lspace, rspace);
-			log("trigger char: %s", toUpdate.charAt(toUpdate.length - 1));
+			log("foramt: trigger char: %s, toUpdate: %s, lspace: %d, rspace: %d", 
+				toUpdate.charAt(toUpdate.length - 1), toUpdate, lspace, rspace);
 			update.view.dispatch({ changes: { from: from + lspace, to: to - rspace, insert: formatLine(trimmed) }, annotations: ProgramTxn.of(true) });
 		}
 	};
@@ -200,7 +200,7 @@ export default class TypingTransformer extends Plugin {
 				if (!deleteTrigSet.has(delChar)) { shouldHijack = false; }
 				// mock inserting a special DEL_TRIG
 				char = DEL_TRIG;
-				// del: 578 579 578 578 -> insert: 579 579 579 560
+				// del: 578 579 578 578 -> insert: 579 579 579 580
 				fromA = toA;
 				fromB += 1;
 				toB = fromB + 1;
@@ -220,6 +220,8 @@ export default class TypingTransformer extends Plugin {
 			const input = tr.startState.sliceDoc(leftIdx, fromB + rmax);
 			const rule = this.rules.match(input, char, insertPosFromLineHead);
 			if (rule != null) {
+				// TODO: record meta info of a rule
+				log("hit covert rule: %s", rule.left.join(""))
 				const change = rule.mapToChanges(fromB);
 				change.annotations = ProgramTxn.of(true);
 				changes.push(change);

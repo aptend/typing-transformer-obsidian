@@ -78,7 +78,6 @@ export class SettingTab extends PluginSettingTab {
 
     display(): void {
         const { containerEl, plugin } = this;
-        console.log("display settings");
         containerEl.empty();
 
         // new Setting(containerEl)
