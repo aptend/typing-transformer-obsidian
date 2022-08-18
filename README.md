@@ -37,7 +37,7 @@ A conversion rule has the following syntax:
 *Anything in angled brackets are replaced*
 
 ### Example 1: Expanding Abbreviated Phrases
-![](https://github.com/caasion/typing-transformer-obsidian/blob/docs/docs/dpx.gif)
+![dpx](https://user-images.githubusercontent.com/49832303/184522399-e0c25d5b-4aad-4c0e-a03a-956fbf3965bb.gif)
 
 
 When `dp` is entered and `x` follows, the cursor will be after `x`, which triggers the conversion. 
@@ -47,15 +47,14 @@ Everything will then be replaced with the result: `don\'t panic|`.
 `|` indicates the cursor position after the conversion. (You can place it anywhere in the text.)
 
 ### Example 2: Auto-pairing of symbols
-![](https://github.com/caasion/typing-transformer-obsidian/blob/docs/docs/auto-pair.gif)
+![auto-pair](https://user-images.githubusercontent.com/49832303/185430735-8601bd41-077f-417c-96bc-c57f3428bf5a.gif)
 
 The trigger is `《`.
 
 The rule auto-pairs Chinese bookmarks and places the cursor in the middle.
 
 ### Example 3: Transformation of two full width characters into one half width character
-![](https://github.com/caasion/typing-transformer-obsidian/blob/docs/docs/auto-pair%20and%20transformation.gif)
-
+![auto-pair and transformation](https://user-images.githubusercontent.com/49832303/185430769-84c12d45-0ee4-434c-80a6-04466cebb9bd.gif)
 This rule works with the one above.
 
 1. When a `《` is entered, the second rule auto-pairs it.
@@ -88,7 +87,7 @@ The syntax of a selection rule is as follows:
 When text is selected and the trigger characters are entered, Typing Transformer will help you insert two characters on each side of the selection.
 
 ### Example 1: Selection auto-pair of <angled brackets>
-![](https://github.com/caasion/typing-transformer-obsidian/blob/docs/docs/selection.gif)
+![selection](https://user-images.githubusercontent.com/49832303/185430794-c734358b-8dd4-4cc0-9856-d6e39d27b777.gif)
 
 The auto-pairing of angled brackets make typing html a lot easier!
 
