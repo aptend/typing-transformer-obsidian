@@ -76,6 +76,7 @@ esbuild.build({
 	plugins: [wasmPlugin, copyFile],
 	entryPoints: ['src/main.ts'],
 	bundle: true,
+	minify: prod ? true : false,
 	external: [
 		'obsidian', 
 		'electron',

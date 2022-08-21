@@ -90,11 +90,13 @@ export default class TypingTransformer extends Plugin {
 
 	onunload() { console.log('unloading typing transformer plugin'); }
 
-	configureRules = (ruleString: string): string[] => {
+	configureRules = async (ruleString: string): Promise<string[]> => {
 		const rules = new Rules(ruleString);
 		if (rules.errors.length === 0) {
 			this.rules = rules;
-		} 
+			this.settings.convertRules = ruleString;
+			await this.saveSettings();
+		}
 		return rules.errors;
 	};
 

@@ -2,7 +2,8 @@
     "root": true,
     "parser": "@typescript-eslint/parser",
     "plugins": [
-      "@typescript-eslint"
+      "@typescript-eslint",
+      "react-hooks"
     ],
     "extends": [
       "eslint:recommended",
@@ -16,6 +17,8 @@
       "@typescript-eslint/no-unused-vars": ["error", { "args": "none" }],
       "@typescript-eslint/no-namespace": "off",
       "no-constant-condition": ["error", { "checkLoops": false }],
-      "semi": [2, "always"]
+      "semi": [2, "always"],
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn"
     } 
   }

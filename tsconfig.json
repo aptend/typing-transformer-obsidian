@@ -16,9 +16,11 @@
       "ES7",
       "ES2021"
     ],
-    "outDir": "build"
+    "outDir": "build",
+    "jsx": "react"
   },
   "include": [
-    "**/*.ts"
+    "**/*.ts",
+    "**/*.tsx"
   ]
 }

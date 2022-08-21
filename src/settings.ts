@@ -1,11 +1,16 @@
-import { App, PluginSettingTab, Setting, ButtonComponent, ExtraButtonComponent } from "obsidian";
+import { App, PluginSettingTab, Setting } from "obsidian";
 import TypingTransformer from "./main";
 import { DEFAULT_RULES } from "./const";
-import { EditorState, Extension } from "@codemirror/state";
-import { EditorView, ViewUpdate, lineNumbers } from "@codemirror/view";
+import { Extension } from "@codemirror/state";
+import { EditorView, lineNumbers } from "@codemirror/view";
 import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { python } from "@codemirror/lang-python";
 import { tags as t } from "@lezer/highlight";
+
+import * as React from "react";
+import { createRoot, Root } from "react-dom/client";
+import { Editor } from "./components/editor";
+
 
 export const config = {
     name: "obsidian",
@@ -65,7 +70,7 @@ export const DEFAULT_SETTINGS: TypingTransformerSettings = {
 
 export class SettingTab extends PluginSettingTab {
     plugin: TypingTransformer;
-    ruleEditor: EditorView;
+    ruleEditor: Root;
 
     constructor(app: App, plugin: TypingTransformer) {
         super(app, plugin);
@@ -73,7 +78,7 @@ export class SettingTab extends PluginSettingTab {
     }
 
     hide() {
-        this.ruleEditor?.destroy();
+        this.ruleEditor.unmount();
     }
 
     display(): void {
@@ -118,12 +123,11 @@ export class SettingTab extends PluginSettingTab {
             );
 
         this.ruleEditor = createRuleEditorInContainer(containerEl, plugin);
-
     }
 }
 
 
-function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTransformer): EditorView {
+function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTransformer): Root {
     // source: obsidian-latex-suite setting tab, thanks a lot.
     const fragment = document.createDocumentFragment();
     fragment.createEl("span", { text: "Enter conversion, selection, and deletion rules here. NOTES:" }); //line 1
@@ -137,28 +141,7 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
         .setDesc(fragment)
         .setClass("rules-text-area");
 
-    const customCSSWrapper = convertRulesSetting.controlEl.createDiv("rules-editor-wrapper");
-    const rulesFooter = convertRulesSetting.controlEl.createDiv("rules-footer");
-    const validity = rulesFooter.createDiv("rules-editor-validity");
-
-    const validityIndicator = new ExtraButtonComponent(validity);
-    validityIndicator
-        .setIcon("checkmark")
-        .extraSettingsEl.addClass("rules-editor-validity-indicator");
-
-    const validityText = validity.createDiv("rules-editor-validity-text");
-    validityText.classList.add("setting-item-description", "rules-editor-validity-txt");
-
-    function updateValidityIndicator(success: boolean, errs: string[]) {
-        validityIndicator.setIcon(success ? "checkmark" : "cross");
-        validityIndicator.extraSettingsEl.removeClass(success ? "invalid" : "valid");
-        validityIndicator.extraSettingsEl.addClass(success ? "valid" : "invalid");
-        const fragment = document.createDocumentFragment();
-        for (const err of errs) {
-            fragment.createEl("div", { text: err });
-        }
-        validityText.setText(success ? "Saved" : fragment);
-    }
+    const root = createRoot(convertRulesSetting.controlEl);
 
     const extensions: Extension[] = [
         obsidianTheme,
@@ -166,40 +149,13 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
         EditorView.lineWrapping,
         python(), // it is better to write a language support for rules
         syntaxHighlighting(obsidianHighlightStyle),
-        EditorView.updateListener.of(async (v: ViewUpdate) => {
-            if (v.docChanged) {
-                const value = v.state.doc.toString();
-                await feedRules(value);
-            }
-        })
     ];
-
-
-    const feedRules = async (newRule: string) => {
-        const errs = plugin.configureRules(newRule);
-        if (errs.length != 0) {
-            updateValidityIndicator(false, errs);
-        } else {
-            updateValidityIndicator(true, []);
-            plugin.settings.convertRules = newRule;
-            await plugin.saveSettings();
-        }
-    };
-
-    const convertRulesEditor = new EditorView({
-        state: EditorState.create({ doc: plugin.settings.convertRules, extensions: extensions })
-    });
-    customCSSWrapper.appendChild(convertRulesEditor.dom);
-
-    const buttonsDiv = rulesFooter.createDiv("rules-editor-buttons");
-    const reset = new ButtonComponent(buttonsDiv);
-    reset.setIcon("switch")
-        .setTooltip("Reset to default rules")
-        .onClick(async () => {
-            convertRulesEditor.setState(EditorState.create({ doc: DEFAULT_RULES, extensions: extensions }));
-            await feedRules(DEFAULT_RULES);
-        });
-    // reopen settings tab, the line numbers is disaligned with the content, I don't know why...
-    // as a workaround, modify the content once to update the display of line numbers
-    return convertRulesEditor;
+    root.render(Editor({
+        text: plugin.settings.convertRules,
+        resetText: DEFAULT_RULES,
+        checkOnUpdate: plugin.configureRules,
+        extensions: extensions,
+    }));
+    
+    return root;
 }
