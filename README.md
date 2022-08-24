@@ -73,7 +73,11 @@ A deletion rule has the following syntax:
 
 ### Example 1: Deletion of a pair of brackets
 
-<!-- GIF -->
+![pair deletion](https://user-images.githubusercontent.com/103465188/186443468-46a21ef9-1bc6-4de2-a1bd-187c8069e8e8.gif)
+
+### Example 2: Quick Deletion of Asterisks
+
+![asterisks deletion](https://user-images.githubusercontent.com/103465188/186443487-484bd969-2c16-42ec-824c-cebc1799431c.gif)
 
 ## Selection Rules
 
