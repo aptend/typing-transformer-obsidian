@@ -50,6 +50,7 @@ The trigger of the rule is `《` and the rule auto-pairs Chinese bookmarks and p
 
 ### Example 3: Transformation of two full width characters into one half width character
 ![auto-pair and transformation](https://user-images.githubusercontent.com/49832303/185430769-84c12d45-0ee4-434c-80a6-04466cebb9bd.gif)
+
 This rule works with the one above.
 
 1. When a `《` is entered, the second rule auto-pairs it.
