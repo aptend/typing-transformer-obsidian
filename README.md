@@ -24,7 +24,7 @@ In addition, Typing Transformer has auto-formatting features such as [inserting 
 - Resizable rule editor
 - Fixed bugs in auto formatting (no longer adds spaces when typing URLs and time)
 
-Special thanks to @caasion for wonderful thoughts and work in 0.3.0
+Special thanks to [@caasion](https://github.com/caasion) for wonderful thoughts and work in 0.3.0
 
 ## Input Conversion Rules
 
