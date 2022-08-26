@@ -94,7 +94,7 @@ export class SettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("Auto Format")
-            .setDesc("Enable auto adding spaces etc.")
+            .setDesc("Enable the auto insertion of spaces.")
             .addToggle(comp => comp
                 .setValue(plugin.settings.autoFormatOn)
                 .onChange(async (value) => {
@@ -107,7 +107,7 @@ export class SettingTab extends PluginSettingTab {
 
         new Setting(containerEl)
             .setName("Zone Indicator")
-            .setDesc("Enable showing zone indicator's start point as '⭐️'")
+            .setDesc("Enable indication of a zone's start point with '⭐️'")
             .addToggle(comp => comp
                 .setValue(plugin.settings.zoneIndicatorOn)
                 .onChange(async (value) => {
@@ -130,7 +130,7 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
     fragment.createEl("span", { text: "Enter conversion, selection, and deletion rules here. NOTES:" }); //line 1
     const ol = fragment.createEl("ol");
     ol.createEl("li", { text: "Each line is one rule. Rules that come first have higher priority." }); //note 1
-    ol.createEl("li", { text: "Lines starting with \"#\" will be treated as comments and ignored." }); //note 2
+    ol.createEl("li", { text: "Lines starting with \"#\" are treated as comments and ignored. Inline comments are also allowed" }); //note 2
     ol.createEl("li", { text: "Certain characters ' | \\ must be escaped with backslahes \\."}) //note 3
 
     const convertRulesSetting = new Setting(container)
