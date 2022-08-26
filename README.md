@@ -24,6 +24,8 @@ In addition, Typing Transformer has auto-formatting features such as [inserting 
 - Resizable rule editor
 - Fixed bugs in auto formatting (no longer adds spaces when typing URLs and time)
 
+Special thanks to @caasion for wonderful thoughts and work in 0.3.0
+
 ## Input Conversion Rules
 
 Input conversion rules are versatile and can be used in creative ways. These include expanding abbreviated phrases, auto-pairing symbols, transofrmation of full-width characters, auto correct and more!
@@ -113,5 +115,4 @@ Auto-formatting triggers by sentence fragments; the insertion of space occurs wh
 
 *Note: Auto-formatting only supports Chinese and English as of now.*
 
-To learn more about the internal workings, see [[How it works.md]]
-<!-- TODO: Replace Obsidian Link with actual link -->
+To learn more about the internal workings, see [How it works.md](docs/How%20it%20works.md)
