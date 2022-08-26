@@ -105,8 +105,13 @@ These rules are supported by default:
 
 ## Formatting Lines with Spaces
 
-When typing in multiple languages, inserting spaces between different language blocks will bring a better reading experience. Of course, Typing Transformer can help you with the addition of spaces.
+When typing in multiple languages, inserting spaces between different language blocks optimizes the reading experience. Without doubt, Typing Transformer contains functionalities that can help.
 
 ![add spaces](https://user-images.githubusercontent.com/49832303/175770015-6dba97d6-5eb2-4d30-a28d-e7ae061c2e7a.gif)
 
-In most cases, the range of auto-formatting is a short sentence, and the actual processing part will have "⭐️" to indicate the starting point and have the current cursor position to be the end point. The timing of the formatting is usually when you enter a sentence punctuation, such as a comma, a period, a space can also do.
+Auto-formatting triggers by sentence fragments; the insertion of space occurs when punctuation is entered, such as commas, periods or spaces. When processing, `⭐️` (Zone Indicator) will indicate the starting point and the current cursor position will act as the end point. 
+
+*Note: Auto-formatting only supports Chinese and English as of now.*
+
+To learn more about the internal workings, see [[How it works.md]]
+<!-- TODO: Replace Obsidian Link with actual link -->

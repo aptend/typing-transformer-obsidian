@@ -1,6 +1,6 @@
-Q: How does auto-space work internally?
+## Q: How does auto-formatting work internally?
 
-A: A simple syntax parsing rule is written using [pest.rs](https://pest.rs/) to divide a sentence into multiple block types like these:
+A: A simple syntax parsing rule is written using [pest.rs](https://pest.rs/) to divide a sentence into multiple block types:
 
 ```pest
 Block = _{ 
@@ -24,20 +24,20 @@ Block = _{
 1. `Other` and the surrounding blocks
 1. `Punct` and the block on the left
 
-For example, the line of `秦时moon汉时关，  万里长征人no还` will be divided into blocks:
+For example, the line of `秦时moon汉时关，  万里长征人no还` will be divided into the following blocks:
 
 - Cn: "秦时"
-- Eng: "moon"  --- insert a space before Eng
-- Cn: "汉时关"  --- insert a space before Cn
-- FWPunct: "，" --- DO NOT add spaces before or after FWPunct
-- MultiSpace: "  " --- DO NOT add spaces before or after MultiSpace
-- Cn: "万里长征人" --- DO NOT add spaces after MultiSpace
-- Eng: "no" --- add a space before Eng
-- Cn: "还" --- add a space before Cn
+- Eng: "moon"  --- inserts a space before Eng
+- Cn: "汉时关"  --- inserts a space before Cn
+- FWPunct: "，" --- DOES NOT add spaces before or after FWPunct
+- MultiSpace: "  " --- DOES NOT add spaces before or after MultiSpace
+- Cn: "万里长征人" --- DOES NOT add spaces after MultiSpace
+- Eng: "no" --- adds a space before Eng
+- Cn: "还" --- adds a space before Cn
 - EOF
 
-Therefore, the result is `秦时 moon 汉时关，  万里长征人 no 还`
+After the processing, the result is `秦时 moon 汉时关，  万里长征人 no 还`
 
-Q: How does converting rules work internally?
+## Q: How do converting rules work internally?
 
-A: A hand-written rule parser parses user rules and organized them in a trie tree. The common pattern can be expressed as: **initial string + a trigger character = result string**
+A: A hand-written rule parser parses user rules and organizes them in a trie tree. The common pattern can be expressed as: **`initial string + a trigger character = result string`**
