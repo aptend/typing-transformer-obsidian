@@ -78,7 +78,6 @@ export class SettingTab extends PluginSettingTab {
 
     display(): void {
         const { containerEl, plugin } = this;
-        console.log("display settings");
         containerEl.empty();
 
         // new Setting(containerEl)
@@ -131,7 +130,7 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
     const ol = fragment.createEl("ol");
     ol.createEl("li", { text: "Each line is one rule. Rules that come first have higher priority." }); //note 1
     ol.createEl("li", { text: "Lines starting with \"#\" are treated as comments and ignored. Inline comments are also allowed" }); //note 2
-    ol.createEl("li", { text: "Certain characters ' | \\ must be escaped with backslahes \\."}) //note 3
+    ol.createEl("li", { text: "Certain characters ' | \\ must be escaped with backslashes \\."}); //note 3
 
     const convertRulesSetting = new Setting(container)
         .setName("Rules")
@@ -147,7 +146,7 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
         .setIcon("checkmark")
         .extraSettingsEl.addClass("rules-editor-validity-indicator");
 
-    const validityText = validity.createDiv("rules-editor-validity-text")
+    const validityText = validity.createDiv("rules-editor-validity-text");
     validityText.classList.add("setting-item-description", "rules-editor-validity-txt");
 
     function updateValidityIndicator(success: boolean, errs: string[]) {
@@ -177,9 +176,9 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
 
 
     const feedRules = async (newRule: string) => {
-        plugin.configureRules(newRule);
-        if (plugin.rulesErrs.length != 0) {
-            updateValidityIndicator(false, plugin.rulesErrs);
+        const errs = plugin.configureRules(newRule);
+        if (errs.length != 0) {
+            updateValidityIndicator(false, errs);
         } else {
             updateValidityIndicator(true, []);
             plugin.settings.convertRules = newRule;

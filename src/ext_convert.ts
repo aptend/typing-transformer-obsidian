@@ -38,7 +38,7 @@ function findOnlyAnchor(s: Array<string>): number {
 
 function prefixOf(s1: Array<string>, s2: Array<string>): boolean {
     if (s1.length > s2.length) return false;
-    for (let i = 1; i < s1.length; i++) {
+    for (let i = 0; i < s1.length; i++) {
         if (s1[i] != s2[i]) return false;
     }
     return true;
