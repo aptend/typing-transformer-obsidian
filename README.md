@@ -1,59 +1,118 @@
-
-
 <p align="right"><strong>English</strong> | <a href="https://github.com/aptend/typing-transformer-obsidian/blob/main/README-CN.md">中文</a></p>
 
----
+# Typing Transformer Obsidian
 
-Typing Transformer is inspired by [Easy Typing](https://github.com/Yaozhuwa/easy-typing-obsidian), thanks to Easy Typing!
+Typing Transformer is a plugin packed with features that will literally transform your typing. It has clean internal rules, flexible configuration and allows users to have a customized auto-formatting experience as typing.
 
-Typing Transofrmer has clean internal rules, flexible configuration and allows users to have a customized auto-formatting experience as typing
+Typing Transformer is inspired by [Easy Typing](https://github.com/Yaozhuwa/easy-typing-obsidian). Thanks to Easy Typing!
 
-**Note: The implementation depends on CodeMirror6 and only works in non-legacy mode in Obsidian 0.14.15 or later**
+*Note: The implementation depends on CodeMirror6 and only works in non-legacy mode in Obsidian 0.14.15 or later*
 
-## Configurable input conversion
+Typing Transformer currently supports three types of transformation rules:
+1. [Input Conversion Rules](#input-conversion-rules)
+2. [Deletion Rules](#deletion-rules-tbd)
+3. [Selection Rules](#selection-rules)
 
+In addition, Typing Transformer has auto-formatting features such as [inserting spaces](#formatting-lines-with-spaces) between multiple languages and certain symbols.
 
-Typing Trasnformer supports automatic expansion of predefined snippets on input.
+## What's New in 0.3.0?
 
-![conversion](https://user-images.githubusercontent.com/49832303/175769416-c0fce828-cf72-4d2d-b74d-8bf35f78ce27.gif)
+- Better README.md
+- Deletion rules
+- Selection now supports inserting multiple characters
+- Improved error messages in editor
+- Resizable rule editor
+- Fixed bugs in auto formatting (no longer adds spaces when typing URLs and time)
 
-For example, a rule is now configured as follows
+Special thanks to [@caasion](https://github.com/caasion) for wonderful thoughts and work in 0.3.0
 
+## Input Conversion Rules
+
+Input conversion rules are versatile and can be used in creative ways. These include expanding abbreviated phrases, auto-pairing symbols, transofrmation of full-width characters, auto correct and more!
+
+An input conversion rule has the following syntax:
+```coffeescript
+'<trigger>' -> '<result>'
 ```
-'dpx|' -> 'don\'t panic|'
+*Anything in angled brackets are replaced*
+
+### Example 1: Expanding Abbreviated Phrases
+![dpx](https://user-images.githubusercontent.com/49832303/184522399-e0c25d5b-4aad-4c0e-a03a-956fbf3965bb.gif)
+
+When `dp` is entered and `x` follows, the cursor will be after `x`, which triggers the conversion. 
+
+Everything will then be replaced with the result: `don\'t panic|`.
+
+*Note: `|` indicates the cursor position after the conversion. (You can place it anywhere in the text.)*
+
+### Example 2: Auto-pairing of symbols
+![auto-pair](https://user-images.githubusercontent.com/49832303/185430735-8601bd41-077f-417c-96bc-c57f3428bf5a.gif)
+
+The trigger of the rule is `《` and the rule auto-pairs Chinese bookmarks and places the cursor in the middle.
+
+### Example 3: Transformation of two full width characters into one half width character
+![auto-pair and transformation](https://user-images.githubusercontent.com/49832303/185430769-84c12d45-0ee4-434c-80a6-04466cebb9bd.gif)
+
+This rule works with the one above.
+
+1. When a `《` is entered, the second rule auto-pairs it.
+2. When another `《` is entered, the first rule will take priority because it matches. 
+3. The auto-pair rule won't do anything yet. This results in `《《|》`.
+4. This is then converted by the first rule, by the first rule, into `<`.
+
+*Note: **Rules that come first have higher priority**, so the conversion into full width characters must come first before the auto-pairing*
+
+**More examples can be found in the settings page of this plugin. Have fun converting!**
+
+## Deletion Rules
+
+Deletion rules are the reverse of input conversion rules; the deletion of a certain character acts as the trigger. These can be used with auto-pairing rules to fully power-up your typing.
+
+A deletion rule has the following syntax:
+```coffeescript
+'<deletion trigger>' -x '<result>'
+```
+*Anything in angled brackets are replaced*
+
+### Example 1: Deletion of a pair of brackets
+
+![pair deletion](https://user-images.githubusercontent.com/103465188/186443468-46a21ef9-1bc6-4de2-a1bd-187c8069e8e8.gif)
+
+### Example 2: Quick Deletion of Asterisks
+
+![asterisks deletion](https://user-images.githubusercontent.com/103465188/186443487-484bd969-2c16-42ec-824c-cebc1799431c.gif)
+
+## Selection Rules
+
+Selection rules will help your insert characters on both sides of the selected text when **one** trigger character is entered
+
+The syntax of a selection rule is as follows:
+```coffeescript
+'<trigger>' -> '<left insert>' + '<right insert>'
+```
+*Anything in angled brackets are replaced*
+
+### Example 1: Selection auto-pair of <angled brackets>
+![selection](https://user-images.githubusercontent.com/49832303/185430794-c734358b-8dd4-4cc0-9856-d6e39d27b777.gif)
+
+The auto-pairing of angled brackets make typing HTML a lot easier!
+
+These rules are supported by default:
+```coffeescript
+'·'  -> '\`' + '\`'
+'￥'  -> '$' + '$'
+'《'  -> '《' + '》'
+'<'  -> '<' + '>'
 ```
 
-where `|` indicates the cursor position. `dpx|` is the trigger rule, when `dp` is entered and then `x` follows, the conversion is triggered and the entered `dp` will be replaced by `don't panic` and the cursor will be placed at the end of `panic`.
+## Formatting Lines with Spaces
 
-
-In addition to helping us expand abbreviated phrases, this feature can also handle symbol conversions, such as auto-pairing symbols, or turning fullwidth symbols into halfwidth ones, examples:
-- `'《|' -> '《|》'` rule describes the automatic matching of Chinese book marks and placing the cursor in the middle
-- `'。。|' -> '.|'` rule describes the transformation of two Chinese periods into one English period
-
-**Refer to more rules in the setting page of Typing Transfomer and have fun converting!**
-
-## Configiurable paired symbols insertion to selection
-
-When an area is selected and some symbols are entered, corresponding paired symbols are automatically added to both sides of the selected area.
-
-The following symbols are currently supported by default.
-
-- `selected` + `·` -> `` `selected` ``
-- `selected` + `￥` -> `$selected$`
-- `selected` + `<`  -> `<selected>`
-- `selected` + `《`  -> `《selected》`
-
-As with the conversion rules, **selection rules can also be created in the Typing Transformer's settings page**. The basic format is:
-
-`'trigger char' -> 'left-insert-char' + 'right-insert-char'`
-
-
-## Format line with spaces
-
-When typing in multiple languages, inserting spaces between different language blocks will bring a better reading experience. Of course, Typing Transformer can help you with the addition of spaces.
+When typing in multiple languages, inserting spaces between different language blocks optimizes the reading experience. Without doubt, Typing Transformer contains functionalities that can help.
 
 ![add spaces](https://user-images.githubusercontent.com/49832303/175770015-6dba97d6-5eb2-4d30-a28d-e7ae061c2e7a.gif)
 
-In most cases, the range of auto-formatting is a short sentence, and the actual processing part will have "⭐️" to indicate the starting point and have the current cursor position to be the end point. The timing of the formatting is usually when you enter a sentence punctuation, such as a comma, a period, a space can also do.
+Auto-formatting triggers by sentence fragments; the insertion of space occurs when punctuation is entered, such as commas, periods or spaces. When processing, `⭐️` (Zone Indicator) will indicate the starting point and the current cursor position will act as the end point. 
 
+*Note: Auto-formatting only supports Chinese and English as of now.*
 
+To learn more about the internal workings, see [How it works.md](docs/How%20it%20works.md)

@@ -31,10 +31,8 @@ export namespace SW {
 
 export const PUNCTS = new Set<string>(" ，。：？,.:?");
 
-export const DEFAULT_RULES = String.raw`# Converting Rules
-# ---------------------------------------------
-
-# line head converting. 
+export const DEFAULT_RULES = String.raw`
+# Line head conversion
 # Note: this rule can't apply to the very first line of the document
 '\n》|' -> '\n>|'
 '\n、|' -> '\n/|'
@@ -46,24 +44,23 @@ export const DEFAULT_RULES = String.raw`# Converting Rules
 '；；|' -> ';|'
 '，，|' -> ',|'
 
-# auto pair and convert
+# Auto-pair, Input Conversion, and Deletion
 '《《|》' -> '<|' # this one take higer priority than the next line
-'《|'     -> '《|》'
+'《|'    -> '《|》'
 '《|》'   -x '|'
 '（（|）' -> '(|)'
 '（|'     -> '（|）'
 '（|）'   -x '|'
 
-# auto code block
+# Auto code block
 '··|'  -> '\`|\`' # inline block
 '\`·|\`' -> '\`\`\`|\n\`\`\`'
 
 # have fun converting!
-# 'dpx|' -> 'don\'t panic|'
+'dpx|' -> 'don\'t panic|'
 
 
 # Selection Insert Rules
-# ---------------------------------------------
 '·'  -> '\`' + '\`'
 '￥'  -> '$' + '$'
 '《'  -> '《' + '》'
