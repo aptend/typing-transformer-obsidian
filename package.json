@@ -1,6 +1,6 @@
 {
     "name": "obsidian-typing-transformer",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "description": "Improved, configurable auto formatting as typing",
     "main": "src/main.js",
     "scripts": {
