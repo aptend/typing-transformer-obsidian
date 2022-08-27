@@ -419,11 +419,15 @@ function newConvRulesIndex(rules: ConvRule[]): TrieNode {
 // A reversed trie
 class TrieNode {
     next: Map<string, TrieNode>;
-    value: number;
+    value: number[];
 
     constructor() {
         this.next = new Map();
-        this.value = -1;
+        this.value = [];
+    }
+
+    isKeyStop(): boolean {
+        return this.value.length > 0;
     }
 
     insert(rule: ConvRule, idx: number) {
@@ -440,7 +444,7 @@ class TrieNode {
                 node = newNode;
             }
         }
-        node.value = idx;
+        node.value.push(idx);
     }
 
     collectIdxsAlong(key: string): number[] {
@@ -448,13 +452,13 @@ class TrieNode {
 
         let node: TrieNode = this;
         for (let i = key.length - 1; i > -1; i--) {
-            if (node.value >= 0) { idxs.push(node.value); }
+            if (node.isKeyStop()) { idxs.push(...node.value); }
             node = node.next.get(key[i]);
             if (node === undefined) { break; }
         }
 
-        if (node != undefined && node.value >= 0) {
-            idxs.push(node.value);
+        if (node != undefined && node.isKeyStop()) {
+            idxs.push(...node.value);
         }
 
         return idxs;
