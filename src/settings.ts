@@ -1,11 +1,12 @@
-import { App, PluginSettingTab, Setting, ButtonComponent, ExtraButtonComponent } from "obsidian";
+import { App, PluginSettingTab, Setting, ButtonComponent, ExtraButtonComponent, Notice, Modal } from "obsidian";
 import TypingTransformer from "./main";
 import { DEFAULT_RULES } from "./const";
-import { EditorState, Extension } from "@codemirror/state";
+import { Annotation, EditorState, Extension } from "@codemirror/state";
 import { EditorView, ViewUpdate, lineNumbers } from "@codemirror/view";
 import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { python } from "@codemirror/lang-python";
 import { tags as t } from "@lezer/highlight";
+import { log } from "./utils"
 
 export const config = {
     name: "obsidian",
@@ -49,11 +50,21 @@ const obsidianTheme = EditorView.theme({
 });
 
 
+const BaseProfileName = "base";
+const ProfileSwitch = Annotation.define<boolean>();
+
+interface Profile {
+    title: string;
+    content: string;
+}
+
 export interface TypingTransformerSettings {
     debug: boolean,
     convertRules: string,
     autoFormatOn: boolean,
     zoneIndicatorOn: boolean,
+    profiles: Profile[],
+    activeProfile: string,
 }
 
 export const DEFAULT_SETTINGS: TypingTransformerSettings = {
@@ -61,35 +72,49 @@ export const DEFAULT_SETTINGS: TypingTransformerSettings = {
     convertRules: DEFAULT_RULES,
     zoneIndicatorOn: true,
     autoFormatOn: true,
+    profiles: [
+        { title: BaseProfileName, content: DEFAULT_RULES },
+        { title: "p1", content: "'p|' -> 'p1|'" }
+    ],
+    activeProfile: BaseProfileName,
 };
 
 export class SettingTab extends PluginSettingTab {
     plugin: TypingTransformer;
     ruleEditor: EditorView;
+    editorState: State;
 
     constructor(app: App, plugin: TypingTransformer) {
         super(app, plugin);
         this.plugin = plugin;
+        this.editorState = {
+            selectedProfileName: BaseProfileName,
+            selectedProfileEl: undefined,
+            baseProfileEl: undefined,
+            profilesMap: new Map<string, string>(plugin.settings.profiles.map((p) => {
+                return [p.title, p.content];
+            })),
+            editedProfile: new Set<string>()
+        };
     }
 
-    hide() {
+    async hide() {
         this.ruleEditor?.destroy();
+        const s = this.editorState;
+        if (s.editedProfile.size > 0) {
+            const newProfiles: Profile[] = [];
+            for (const [key, value] of s.profilesMap) {
+                newProfiles.push({title: key, content: value})
+            }
+            this.plugin.settings.profiles = newProfiles;
+            log("setting: save profiles");
+            await this.plugin.saveSettings();
+        }
     }
 
     display(): void {
         const { containerEl, plugin } = this;
         containerEl.empty();
-
-        // new Setting(containerEl)
-        // 	.setName("Debug")
-        // 	.setDesc("Print more logs to the console")
-        // 	.addToggle(comp => comp
-        // 		.setValue(plugin.settings.debug)
-        // 		.onChange(async (value) => {
-        // 			plugin.settings.debug = value;
-        // 			await plugin.saveSettings();
-        // 		})
-        // 	)
 
         new Setting(containerEl)
             .setName("Auto Format")
@@ -116,34 +141,72 @@ export class SettingTab extends PluginSettingTab {
                     plugin.app.workspace.updateOptions();
                 })
             );
+        
+        new Setting(containerEl)
+                .setName("Profile")
+                .addDropdown((dropdown) => {
+                    const init = () => {
+                        dropdown.selectEl.innerHTML = '';
+                        for (const title of this.editorState.profilesMap.keys()) {
+                            dropdown.addOption(title, title);
+                        }
+                        dropdown.setValue(this.plugin.settings.activeProfile);
+                    }
+                    dropdown.selectEl.onClickEvent((ev) => {
+                        if (ev.targetNode != dropdown.selectEl) return;
+                        init();
+                    })
+                    init();
 
-        this.ruleEditor = createRuleEditorInContainer(containerEl, plugin);
+                    dropdown.onChange(async (value) => {
+                        const map = this.editorState.profilesMap;
+                        let newRule: string;
+                        if (value === BaseProfileName) {
+                            newRule = map.get(BaseProfileName);
+                        } else {
+                            newRule = map.get(BaseProfileName) + '\n' + map.get(value);
+                        }
+    
+                        plugin.settings.activeProfile = value;
+                        plugin.settings.convertRules = newRule;
+                        plugin.configureRules(newRule);
+                        await plugin.saveSettings();
+                    })
+                })
 
+        this.ruleEditor = createRuleEditorInContainer2(containerEl, plugin, this.editorState);
     }
 }
 
+interface State {
+    selectedProfileName: string,
+    selectedProfileEl: HTMLElement,
+    baseProfileEl: HTMLElement,
+    profilesMap: Map<string, string>,
+    editedProfile: Set<string>
+}
 
-function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTransformer): EditorView {
+function createRuleEditorInContainer2(container: HTMLElement, plugin: TypingTransformer, state: State): EditorView {
     // source: obsidian-latex-suite setting tab, thanks a lot.
     const fragment = document.createDocumentFragment();
     fragment.createEl("span", { text: "Enter conversion, selection, and deletion rules here. NOTES:" }); //line 1
     const ol = fragment.createEl("ol");
     ol.createEl("li", { text: "Each line is one rule. Rules that come first have higher priority." }); //note 1
     ol.createEl("li", { text: "Lines starting with \"#\" are treated as comments and ignored. Inline comments are also allowed" }); //note 2
-    ol.createEl("li", { text: "Certain characters ' | \\ must be escaped with backslashes \\."}); //note 3
+    ol.createEl("li", { text: "Certain characters ' | \\ must be escaped with backslashes \\." }); //note 3
 
     const convertRulesSetting = new Setting(container)
         .setName("Rules")
         .setDesc(fragment)
         .setClass("rules-text-area");
 
+    const profilesContainer = convertRulesSetting.controlEl.createDiv("rules-profiles");
     const customCSSWrapper = convertRulesSetting.controlEl.createDiv("rules-editor-wrapper");
     const rulesFooter = convertRulesSetting.controlEl.createDiv("rules-footer");
     const validity = rulesFooter.createDiv("rules-editor-validity");
 
     const validityIndicator = new ExtraButtonComponent(validity);
-    validityIndicator
-        .setIcon("checkmark")
+    validityIndicator.setIcon("checkmark")
         .extraSettingsEl.addClass("rules-editor-validity-indicator");
 
     const validityText = validity.createDiv("rules-editor-validity-text");
@@ -168,22 +231,45 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
         syntaxHighlighting(obsidianHighlightStyle),
         EditorView.updateListener.of(async (v: ViewUpdate) => {
             if (v.docChanged) {
+                if (v.transactions.reduce((swtich, tr): boolean => swtich || tr.annotation(ProfileSwitch), false)) {
+                    return;
+                }
                 const value = v.state.doc.toString();
                 await feedRules(value);
             }
         })
     ];
 
-
     const feedRules = async (newRule: string) => {
-        const errs = plugin.configureRules(newRule);
+        const errs = plugin.checkRules(newRule);
         if (errs.length != 0) {
             updateValidityIndicator(false, errs);
         } else {
             updateValidityIndicator(true, []);
-            plugin.settings.convertRules = newRule;
-            await plugin.saveSettings();
+            const { selectedProfileName: target, profilesMap: map, editedProfile: set} = state;
+            const activeProfile = plugin.settings.activeProfile;
+            map.set(target, newRule);
+            set.add(target);
+            if (target === BaseProfileName || set.has(activeProfile)) {
+                log("setting: update rules")
+                let newRule: string;
+                if (activeProfile === BaseProfileName) {
+                    newRule = map.get(BaseProfileName);
+                } else {
+                    newRule = map.get(BaseProfileName) + '\n' + map.get(activeProfile);
+                }
+                // when closing setting, hide will save this settings
+                plugin.settings.convertRules = newRule;
+                plugin.configureRules(newRule);
+            }
         }
+    };
+
+    const setCMEditorContent = (text: string) => {
+        convertRulesEditor.dispatch({ 
+            changes: { from: 0, to: convertRulesEditor.state.doc.length, insert: text }, 
+            annotations: ProfileSwitch.of(true) 
+        });
     };
 
     const convertRulesEditor = new EditorView({
@@ -199,7 +285,104 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
             convertRulesEditor.setState(EditorState.create({ doc: DEFAULT_RULES, extensions: extensions }));
             await feedRules(DEFAULT_RULES);
         });
-    // reopen settings tab, the line numbers is disaligned with the content, I don't know why...
-    // as a workaround, modify the content once to update the display of line numbers
+
+    const onProfileClick = (name: string, el: HTMLElement) => {
+        state.selectedProfileEl?.removeClass("selected");
+        el?.addClass("selected");
+        state.selectedProfileEl = el;
+        state.selectedProfileName = name;
+        setCMEditorContent(state.profilesMap.get(name));
+    };
+
+    const onRemoveProfileClick = (name: string, el: HTMLElement) => {
+        if (el === state.selectedProfileEl)
+            onProfileClick(BaseProfileName, state.baseProfileEl);
+        if (plugin.settings.activeProfile == name) {
+            plugin.settings.activeProfile = BaseProfileName;
+        }
+        state.profilesMap.delete(name);
+        state.editedProfile.add(name);
+        profilesContainer.removeChild(el);
+    };
+
+    const addProfile = (profile: Profile, selected: boolean) => {
+        const button = new ExtraButtonComponent(profilesContainer);
+        const el = button.extraSettingsEl;
+        el.accessKey = profile.title;
+        button.onClick(() => onProfileClick(profile.title, el));
+        el.addClass("rules-profile-button");
+        el.setText(profile.title);
+        if (profile.title != BaseProfileName) { // base profile can't be deleted
+            const closeEl = new ExtraButtonComponent(el).setIcon("cross").extraSettingsEl;
+            closeEl.onClickEvent((ev) => { ev.stopPropagation(); onRemoveProfileClick(profile.title, el); });
+            closeEl.addClass("rules-profile-close");
+        } else {
+            state.baseProfileEl = el;
+        }
+        if (selected) { onProfileClick(profile.title, el); }
+    };
+
+    for (const profile of plugin.settings.profiles) {
+        addProfile(profile, profile.title === BaseProfileName);
+    }
+
+    const addButton = new ExtraButtonComponent(profilesContainer).onClick(() => {
+        if (state.profilesMap.size > 5) {
+            new Notice("Too many profiles");
+            return;
+        }
+        new StringInputModal(app, (value: string): boolean => {
+            if (state.profilesMap.has(value)) return false;
+            if (value === "") return true;
+            state.profilesMap.set(value, "");
+            profilesContainer.removeChild(addButton.extraSettingsEl);
+            addProfile({ title: value, content: "" }, true);
+            profilesContainer.appendChild(addButton.extraSettingsEl);
+            return true;
+        }).open();
+    });
+    addButton.extraSettingsEl.addClass("rules-profile-button");
+    addButton.extraSettingsEl.setText("+");
+
     return convertRulesEditor;
+}
+
+
+
+class StringInputModal extends Modal {
+    result: string;
+    onSubmit: (result: string) => boolean;
+
+    constructor(app: App, onSubmit: (result: string) => boolean) {
+        super(app);
+        this.onSubmit = onSubmit;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+
+        new Setting(contentEl)
+            .setName("Profile name")
+            .addText((text) =>
+                text.onChange((value) => { this.result = value; }));
+
+        new Setting(contentEl)
+            .addButton((btn) =>
+                btn
+                    .setButtonText("Submit")
+                    .setCta()
+                    .onClick(() => {
+                        if (this.onSubmit(this.result)) {
+                            this.close();
+                        } else {
+                            err.setText("name already exists!");
+                        }
+                    }));
+        const err = contentEl.createEl("p");
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+    }
 }
