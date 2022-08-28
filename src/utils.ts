@@ -9,6 +9,7 @@ export function initLog(cfg: LogConfig) {
     config = cfg;
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export function log(format?: string, ...parts: any[]) {
     if (config != undefined && config.debug) {
         parts.forEach((v, idx) => {

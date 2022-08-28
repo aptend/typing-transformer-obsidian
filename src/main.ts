@@ -221,7 +221,7 @@ export default class TypingTransformer extends Plugin {
 			const rule = this.rules.match(input, char, insertPosFromLineHead);
 			if (rule != null) {
 				// TODO: record meta info of a rule
-				log("hit covert rule: %s", rule.left.join(""))
+				log("hit covert rule: %s", rule.left.join(""));
 				const change = rule.mapToChanges(fromB);
 				change.annotations = ProgramTxn.of(true);
 				changes.push(change);

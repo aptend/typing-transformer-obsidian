@@ -432,6 +432,7 @@ class TrieNode {
 
     insert(rule: ConvRule, idx: number) {
         const key = rule.leftMatchPart();
+        /* eslint-disable @typescript-eslint/no-this-alias */
         let node: TrieNode = this;
 
         for (let i = key.length - 1; i > -1; i--) {
