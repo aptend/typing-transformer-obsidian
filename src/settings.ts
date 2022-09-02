@@ -6,7 +6,7 @@ import { EditorView, ViewUpdate, lineNumbers } from "@codemirror/view";
 import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { python } from "@codemirror/lang-python";
 import { tags as t } from "@lezer/highlight";
-import { log } from "./utils"
+import { log } from "./utils";
 
 export const config = {
     name: "obsidian",
@@ -50,7 +50,7 @@ const obsidianTheme = EditorView.theme({
 });
 
 
-const BaseProfileName = "base";
+export const BaseProfileName = "base";
 const ProfileSwitch = Annotation.define<boolean>();
 
 interface Profile {
@@ -104,7 +104,7 @@ export class SettingTab extends PluginSettingTab {
         if (s.editedProfile.size > 0) {
             const newProfiles: Profile[] = [];
             for (const [key, value] of s.profilesMap) {
-                newProfiles.push({title: key, content: value})
+                newProfiles.push({ title: key, content: value });
             }
             this.plugin.settings.profiles = newProfiles;
             log("setting: save profiles");
@@ -121,12 +121,7 @@ export class SettingTab extends PluginSettingTab {
             .setDesc("Enable the auto insertion of spaces.")
             .addToggle(comp => comp
                 .setValue(plugin.settings.autoFormatOn)
-                .onChange(async (value) => {
-                    plugin.settings.autoFormatOn = value;
-                    await plugin.saveSettings();
-                    plugin.configureActiveExtsFromSettings();
-                    plugin.app.workspace.updateOptions();
-                })
+                .onChange(async (_val) => await plugin.toggleAutoFormat())
             );
 
         new Setting(containerEl)
@@ -134,45 +129,33 @@ export class SettingTab extends PluginSettingTab {
             .setDesc("Enable indication of a zone's start point with '⭐️'")
             .addToggle(comp => comp
                 .setValue(plugin.settings.zoneIndicatorOn)
-                .onChange(async (value) => {
-                    plugin.settings.zoneIndicatorOn = value;
-                    await plugin.saveSettings();
-                    plugin.configureActiveExtsFromSettings();
-                    plugin.app.workspace.updateOptions();
-                })
+                .onChange(async (_val) => await plugin.toggleIndicator())
             );
-        
-        new Setting(containerEl)
-                .setName("Profile")
-                .addDropdown((dropdown) => {
-                    const init = () => {
-                        dropdown.selectEl.innerHTML = '';
-                        for (const title of this.editorState.profilesMap.keys()) {
-                            dropdown.addOption(title, title);
-                        }
-                        dropdown.setValue(this.plugin.settings.activeProfile);
-                    }
-                    dropdown.selectEl.onClickEvent((ev) => {
-                        if (ev.targetNode != dropdown.selectEl) return;
-                        init();
-                    })
-                    init();
 
-                    dropdown.onChange(async (value) => {
-                        const map = this.editorState.profilesMap;
-                        let newRule: string;
-                        if (value === BaseProfileName) {
-                            newRule = map.get(BaseProfileName);
-                        } else {
-                            newRule = map.get(BaseProfileName) + '\n' + map.get(value);
-                        }
-    
-                        plugin.settings.activeProfile = value;
-                        plugin.settings.convertRules = newRule;
-                        plugin.configureRules(newRule);
-                        await plugin.saveSettings();
-                    })
-                })
+        new Setting(containerEl)
+            .setName("Profile")
+            .addDropdown((dropdown) => {
+                const refreshOptions = () => {
+                    dropdown.selectEl.innerHTML = '';
+                    for (const title of this.editorState.profilesMap.keys()) {
+                        dropdown.addOption(title, title);
+                    }
+                    dropdown.setValue(this.plugin.settings.activeProfile);
+                };
+                dropdown.selectEl.onClickEvent((ev) => {
+                    if (ev.targetNode != dropdown.selectEl) return;
+                    refreshOptions();
+                });
+                refreshOptions();
+
+                dropdown.onChange(async (value) => {
+                    const map = this.editorState.profilesMap;
+                    const newRule = value === BaseProfileName ?
+                        map.get(BaseProfileName) :                        
+                        map.get(BaseProfileName) + '\n' + map.get(value);
+                    await plugin.configureProfile(value, newRule);
+                });
+            });
 
         this.ruleEditor = createRuleEditorInContainer2(containerEl, plugin, this.editorState);
     }
@@ -246,12 +229,12 @@ function createRuleEditorInContainer2(container: HTMLElement, plugin: TypingTran
             updateValidityIndicator(false, errs);
         } else {
             updateValidityIndicator(true, []);
-            const { selectedProfileName: target, profilesMap: map, editedProfile: set} = state;
+            const { selectedProfileName: target, profilesMap: map, editedProfile: set } = state;
             const activeProfile = plugin.settings.activeProfile;
             map.set(target, newRule);
             set.add(target);
             if (target === BaseProfileName || set.has(activeProfile)) {
-                log("setting: update rules")
+                log("setting: update rules");
                 let newRule: string;
                 if (activeProfile === BaseProfileName) {
                     newRule = map.get(BaseProfileName);
@@ -266,9 +249,9 @@ function createRuleEditorInContainer2(container: HTMLElement, plugin: TypingTran
     };
 
     const setCMEditorContent = (text: string) => {
-        convertRulesEditor.dispatch({ 
-            changes: { from: 0, to: convertRulesEditor.state.doc.length, insert: text }, 
-            annotations: ProfileSwitch.of(true) 
+        convertRulesEditor.dispatch({
+            changes: { from: 0, to: convertRulesEditor.state.doc.length, insert: text },
+            annotations: ProfileSwitch.of(true)
         });
     };
 
@@ -367,17 +350,13 @@ class StringInputModal extends Modal {
                 text.onChange((value) => { this.result = value; }));
 
         new Setting(contentEl)
-            .addButton((btn) =>
-                btn
-                    .setButtonText("Submit")
-                    .setCta()
-                    .onClick(() => {
-                        if (this.onSubmit(this.result)) {
-                            this.close();
-                        } else {
-                            err.setText("name already exists!");
-                        }
-                    }));
+            .addButton((btn) => btn
+                .setButtonText("Submit")
+                .setCta()
+                .onClick(() => {
+                    if (this.onSubmit(this.result)) this.close();
+                    else err.setText("name already exists!");
+                }));
         const err = contentEl.createEl("p");
     }
 

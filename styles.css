@@ -7,18 +7,15 @@
     margin-bottom: 0.75rem;
 }
 
-
 .rules-text-area .setting-item-control {
     flex-direction: column;
     align-items: flex-end;
 }
 
-
 .rules-editor-wrapper {
     width: 100%;
     margin-bottom: 0.75rem;
 }
-
 
 .rules-editor-wrapper .cm-editor {
     height: 20em;
@@ -28,7 +25,6 @@
     text-align: left;
     outline: none !important;
 }
-
 
 .rules-editor-wrapper .cm-editor,
 .cm-scroller {
