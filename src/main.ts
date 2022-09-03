@@ -91,7 +91,14 @@ export default class TypingTransformer extends Plugin {
 
 	// Settings
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const data = await this.loadData();
+		let defaultSource = DEFAULT_SETTINGS;
+		if (!data.hasOwnProperty("profiles") && data.convertRules != DEFAULT_SETTINGS.convertRules) {
+			const cloned: TypingTransformerSettings = structuredClone(DEFAULT_SETTINGS);
+			cloned.profiles[0].content = data.convertRules;
+			defaultSource = cloned;
+		}
+		this.settings = Object.assign({}, defaultSource, data);
 	}
 
 	async saveSettings() {
