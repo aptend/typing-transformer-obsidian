@@ -74,7 +74,6 @@ export const DEFAULT_SETTINGS: TypingTransformerSettings = {
     autoFormatOn: true,
     profiles: [
         { title: BaseProfileName, content: DEFAULT_RULES },
-        { title: "p1", content: "'p|' -> 'p1|'" }
     ],
     activeProfile: BaseProfileName,
 };
@@ -132,8 +131,10 @@ export class SettingTab extends PluginSettingTab {
                 .onChange(async (_val) => await plugin.toggleIndicator())
             );
 
+        let onProfileFallback: () => void;
         new Setting(containerEl)
             .setName("Profile")
+            .setDesc("Select active profile. The selected profile will combine 'base' profile")
             .addDropdown((dropdown) => {
                 const refreshOptions = () => {
                     dropdown.selectEl.innerHTML = '';
@@ -147,7 +148,7 @@ export class SettingTab extends PluginSettingTab {
                     refreshOptions();
                 });
                 refreshOptions();
-
+                onProfileFallback = () => { dropdown.setValue(BaseProfileName); }
                 dropdown.onChange(async (value) => {
                     const map = this.editorState.profilesMap;
                     const newRule = value === BaseProfileName ?
@@ -157,7 +158,7 @@ export class SettingTab extends PluginSettingTab {
                 });
             });
 
-        this.ruleEditor = createRuleEditorInContainer2(containerEl, plugin, this.editorState);
+        this.ruleEditor = createRuleEditorInContainer(containerEl, plugin, this.editorState, onProfileFallback);
     }
 }
 
@@ -169,7 +170,7 @@ interface State {
     editedProfile: Set<string>
 }
 
-function createRuleEditorInContainer2(container: HTMLElement, plugin: TypingTransformer, state: State): EditorView {
+function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTransformer, state: State, onProfileFallback: () => void): EditorView {
     // source: obsidian-latex-suite setting tab, thanks a lot.
     const fragment = document.createDocumentFragment();
     fragment.createEl("span", { text: "Enter conversion, selection, and deletion rules here. NOTES:" }); //line 1
@@ -279,9 +280,11 @@ function createRuleEditorInContainer2(container: HTMLElement, plugin: TypingTran
 
     const onRemoveProfileClick = (name: string, el: HTMLElement) => {
         if (el === state.selectedProfileEl)
+            // switch to base profile
             onProfileClick(BaseProfileName, state.baseProfileEl);
         if (plugin.settings.activeProfile == name) {
-            plugin.settings.activeProfile = BaseProfileName;
+            onProfileFallback()
+            plugin.configureProfile(BaseProfileName, state.profilesMap.get(BaseProfileName))
         }
         state.profilesMap.delete(name);
         state.editedProfile.add(name);
@@ -318,6 +321,7 @@ function createRuleEditorInContainer2(container: HTMLElement, plugin: TypingTran
             if (state.profilesMap.has(value)) return false;
             if (value === "") return true;
             state.profilesMap.set(value, "");
+            state.editedProfile.add(value);
             profilesContainer.removeChild(addButton.extraSettingsEl);
             addProfile({ title: value, content: "" }, true);
             profilesContainer.appendChild(addButton.extraSettingsEl);
