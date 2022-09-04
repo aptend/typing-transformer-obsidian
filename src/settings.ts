@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, ButtonComponent, ExtraButtonComponent, Notice, Modal } from "obsidian";
+import { App, PluginSettingTab, Setting, ButtonComponent, ExtraButtonComponent, Notice, Modal, TextComponent } from "obsidian";
 import TypingTransformer from "./main";
 import { DEFAULT_RULES } from "./const";
 import { Annotation, EditorState, Extension } from "@codemirror/state";
@@ -319,7 +319,7 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
         }
         new StringInputModal(app, (value: string): boolean => {
             if (state.profilesMap.has(value)) return false;
-            if (value === "") return true;
+            if (value === undefined) return true;
             state.profilesMap.set(value, "");
             state.editedProfile.add(value);
             profilesContainer.removeChild(addButton.extraSettingsEl);
@@ -337,6 +337,7 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
 
 
 class StringInputModal extends Modal {
+    err: HTMLElement;
     result: string;
     onSubmit: (result: string) => boolean;
 
@@ -345,23 +346,40 @@ class StringInputModal extends Modal {
         this.onSubmit = onSubmit;
     }
 
+    submitEnterCallback = (evt: KeyboardEvent) => {
+        if (evt.key === "Enter") {
+            evt.preventDefault();
+            this.submit();
+        }
+    }
+
+    submit() {
+        if (this.onSubmit(this.result)) this.close();
+        else this.err.setText("Profile already exists!")
+    }
+
     onOpen() {
         const { contentEl } = this;
 
-        new Setting(contentEl)
-            .setName("Profile name")
-            .addText((text) =>
-                text.onChange((value) => { this.result = value; }));
+        this.titleEl.setText("Profile Name")
+
+        const container = this.contentEl.createDiv()
+
+        const textComponent = new TextComponent(container)
+        
+        textComponent.inputEl.style.width = "100%";
+        textComponent
+            .onChange((value) => this.result = value )
+            .inputEl.addEventListener('keydown', this.submitEnterCallback)
+
+        this.err = container.createEl("p");
 
         new Setting(contentEl)
             .addButton((btn) => btn
                 .setButtonText("Submit")
                 .setCta()
-                .onClick(() => {
-                    if (this.onSubmit(this.result)) this.close();
-                    else err.setText("Profile already exists!");
-                }));
-        const err = contentEl.createEl("p");
+                .onClick(() => this.submit()));
+        
     }
 
     onClose() {
