@@ -35,7 +35,7 @@ export function getAllCommands(plugin: TypingTransformer): Command[] {
     for (let i = 0; i < 6; i++) {
         const useProfileCommand = {
             id: "typing-trans-p" + i.toString(),
-            name: "apply profile " + i.toString() + (i === 0 ? " (base)" : ""),
+            name: "apply profile " + i.toString() + (i === 0 ? " (global)" : ""),
             editorCallback: async (_e: Editor, _v: MarkdownView) => {
                 await useProfileX(i);
             }

@@ -50,7 +50,7 @@ const obsidianTheme = EditorView.theme({
 });
 
 
-export const BaseProfileName = "base";
+export const BaseProfileName = "global";
 const ProfileSwitch = Annotation.define<boolean>();
 
 interface Profile {
