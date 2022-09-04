@@ -134,7 +134,7 @@ export class SettingTab extends PluginSettingTab {
         let onProfileFallback: () => void;
         new Setting(containerEl)
             .setName("Profile")
-            .setDesc("Select active profile. The selected profile will combine 'base' profile")
+            .setDesc("Select the active profile. NOTE: The 'global' profile will always be active.")
             .addDropdown((dropdown) => {
                 const refreshOptions = () => {
                     dropdown.selectEl.innerHTML = '';
@@ -314,7 +314,7 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
 
     const addButton = new ExtraButtonComponent(profilesContainer).onClick(() => {
         if (state.profilesMap.size > 5) {
-            new Notice("Too many profiles");
+            new Notice("You can only have 6 profiles at most.");
             return;
         }
         new StringInputModal(app, (value: string): boolean => {
@@ -359,7 +359,7 @@ class StringInputModal extends Modal {
                 .setCta()
                 .onClick(() => {
                     if (this.onSubmit(this.result)) this.close();
-                    else err.setText("name already exists!");
+                    else err.setText("Profile already exists!");
                 }));
         const err = contentEl.createEl("p");
     }

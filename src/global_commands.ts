@@ -6,13 +6,13 @@ export function getAllCommands(plugin: TypingTransformer): Command[] {
 
     const format = {
         id: "typing-trans-toggle-format",
-        name: "toggle auto format",
+        name: "Toggle Auto Formatting",
         editorCallback: async (_e: Editor, _v: MarkdownView) => await plugin.toggleAutoFormat()
     };
 
     const zone = {
         id: "typing-trans-toggle-zone-indicator",
-        name: "toggle auto format zone indicator",
+        name: "Toggle Auto Formatting Zone Indicator",
         editorCallback: async (_e: Editor, _v: MarkdownView) => await plugin.toggleIndicator()
     };
 
