@@ -7,18 +7,15 @@
     margin-bottom: 0.75rem;
 }
 
-
 .rules-text-area .setting-item-control {
     flex-direction: column;
     align-items: flex-end;
 }
 
-
 .rules-editor-wrapper {
     width: 100%;
     margin-bottom: 0.75rem;
 }
-
 
 .rules-editor-wrapper .cm-editor {
     height: 20em;
@@ -27,10 +24,7 @@
     font-size: var(--font-inputs);
     text-align: left;
     outline: none !important;
-
-    border: 1px solid var(--background-modifier-border);
 }
-
 
 .rules-editor-wrapper .cm-editor,
 .cm-scroller {
@@ -43,6 +37,40 @@
     font-family: var(--font-monospace);
 }
 
+
+.rules-profiles {
+    width: 100%;
+    display: flex;
+    
+}
+
+.rules-profile-button {
+    display: flex;
+    height: 40px;
+    min-width: 20px;
+    align-items: center;
+    padding: 0px 10px 12px 10px;
+    
+}
+
+.rules-profile-button svg {
+    width: 12px !important;
+    height: 12px !important;
+}
+
+.rules-profile-close {
+    margin-left: 5px;
+    margin-right: 0px;
+}
+
+.rules-profile-button.selected {
+    background: var(--background-primary);
+    color: var(--text-on-accent); 
+}
+
+.rules-profile-button.clickable-icon {
+    margin: 0 5px;
+}
 
 .rules-footer {
     width: 100%;

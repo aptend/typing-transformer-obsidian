@@ -1,6 +1,6 @@
 import { Plugin, Pos } from 'obsidian';
 import { Annotation, EditorState, Extension, StateField, Transaction, TransactionSpec } from '@codemirror/state';
-import { EditorView, keymap, ViewUpdate } from '@codemirror/view';
+import { EditorView, ViewUpdate } from '@codemirror/view';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm';
 import init, { formatLine, getBlockRanges } from '../liberty-web/charliberty';
@@ -9,6 +9,7 @@ import { initLog, log } from './utils';
 import { Rules, DEL_TRIG } from './ext_convert';
 import { libertyZone } from './ext_libertyzone';
 import { TypingTransformerSettings, SettingTab, DEFAULT_SETTINGS } from './settings';
+import { getAllCommands } from './global_commands';
 
 
 enum ExtID {
@@ -40,8 +41,9 @@ export default class TypingTransformer extends Plugin {
 	rules: Rules;
 	availablExts: Extension[];
 	activeExts: Extension[];
+	profileStatus: HTMLElement;
 
-
+	// Lifetime
 	async onload() {
 		console.log('loading typing transformer plugin');
 		// read saved settings
@@ -57,15 +59,6 @@ export default class TypingTransformer extends Plugin {
 			libertyZone(this.spotLibertyZone),
 			EditorView.updateListener.of(this.addLiberty),
 			deubgExt,
-			keymap.of([
-				{
-					key: "a-b",
-					run: (_view): boolean => {
-						log("alt-b pressed");
-						return true;
-					}
-				}
-			])
 		];
 		this.availablExts.forEach((_, idx) => this.activeExts[idx] = []);
 
@@ -86,16 +79,46 @@ export default class TypingTransformer extends Plugin {
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SettingTab(this.app, this));
+		for (const cmd of getAllCommands(this)) {
+			this.addCommand(cmd);
+		}
+
+		this.profileStatus = this.addStatusBarItem();
+		this.updateProfileStatus();
 	}
 
 	onunload() { console.log('unloading typing transformer plugin'); }
 
-	configureRules = (ruleString: string): string[] => {
-		const rules = new Rules(ruleString);
-		if (rules.errors.length === 0) {
-			this.rules = rules;
-		} 
-		return rules.errors;
+	// Settings
+	async loadSettings() {
+		const data = await this.loadData();
+		let defaultSource = DEFAULT_SETTINGS;
+		if (!data.hasOwnProperty("profiles") && data.convertRules != DEFAULT_SETTINGS.convertRules) {
+			const cloned: TypingTransformerSettings = structuredClone(DEFAULT_SETTINGS);
+			cloned.profiles[0].content = data.convertRules;
+			defaultSource = cloned;
+		}
+		this.settings = Object.assign({}, defaultSource, data);
+	}
+
+	async saveSettings() {
+		await this.saveData(this.settings);
+	}
+
+	configureProfile = async (title: string, ruleString: string) => {
+		this.settings.activeProfile = title;
+		this.settings.convertRules = ruleString;
+		this.configureRules(ruleString);
+		this.updateProfileStatus();
+		await this.saveSettings();
+	};
+
+	configureRules = (ruleString: string) => {
+		this.rules = new Rules(ruleString);
+	};
+
+	checkRules = (ruleString: string): string[] => {
+		return new Rules(ruleString, true).errors;
 	};
 
 	configureActiveExtsFromSettings = () => {
@@ -108,6 +131,23 @@ export default class TypingTransformer extends Plugin {
 		activeIds.forEach((extid) => this.activeExts[extid] = this.availablExts[extid]);
 	};
 
+	toggleAutoFormat = async () => {
+		this.settings.autoFormatOn = !this.settings.autoFormatOn;
+		await this.saveAndReloadPlugin();
+	};
+
+	toggleIndicator = async () => {
+		this.settings.zoneIndicatorOn = !this.settings.zoneIndicatorOn;
+		await this.saveAndReloadPlugin();
+	};
+
+	saveAndReloadPlugin = async () => {
+		await this.saveSettings();
+		this.configureActiveExtsFromSettings();
+		this.app.workspace.updateOptions();
+	};
+
+	// Features
 	spotLibertyZone = ({ view, docChanged }: ViewUpdate): { from: number, to: number } => {
 		if (!docChanged) { return; }
 		const state = view.state;
@@ -175,7 +215,7 @@ export default class TypingTransformer extends Plugin {
 			if (trimmed === '') { return; } // skip empty string
 			const lspace = toUpdate.length - toUpdate.trimStart().length;
 			const rspace = toUpdate.length - toUpdate.trimEnd().length;
-			log("foramt: trigger char: %s, toUpdate: %s, lspace: %d, rspace: %d", 
+			log("foramt: trigger char: %s, toUpdate: %s, lspace: %d, rspace: %d",
 				toUpdate.charAt(toUpdate.length - 1), toUpdate, lspace, rspace);
 			update.view.dispatch({ changes: { from: from + lspace, to: to - rspace, insert: formatLine(trimmed) }, annotations: ProgramTxn.of(true) });
 		}
@@ -253,11 +293,7 @@ export default class TypingTransformer extends Plugin {
 		return tr;
 	};
 
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
+	updateProfileStatus = () => {
+		this.profileStatus.setText(`Active Profile: ${this.settings.activeProfile}`);
+	};
 }

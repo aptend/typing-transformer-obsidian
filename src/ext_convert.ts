@@ -356,7 +356,7 @@ export class Rules {
     deleteTrigSet: Set<string>;
     lmax: number;
     rmax: number;
-    constructor(ruletxt: string) {
+    constructor(ruletxt: string, justCheck=false) {
         // TODO: handle escape in parser?
         const unescapedTxt = ruletxt
             .replaceAll("\\|", "{0v0}") // to a placeholder
@@ -370,6 +370,7 @@ export class Rules {
         this.lmax = this.rmax = 0;
         this.errors = parser.errors;
         if (this.errors.length > 0) return;
+        if (justCheck) return;
 
         this.rules = parser.convRules;
         this.index = newConvRulesIndex(this.rules);
