@@ -99,15 +99,24 @@ export class SettingTab extends PluginSettingTab {
 
     async hide() {
         this.ruleEditor?.destroy();
-        const s = this.editorState;
-        if (s.editedProfile.size > 0) {
+        const { selectedProfileName: target, profilesMap: map, editedProfile: set } = this.editorState;
+        if (set.size > 0) {
             const newProfiles: Profile[] = [];
-            for (const [key, value] of s.profilesMap) {
+            for (const [key, value] of map) {
                 newProfiles.push({ title: key, content: value });
             }
             this.plugin.settings.profiles = newProfiles;
             log("setting: save profiles");
             await this.plugin.saveSettings();
+        }
+        const activeProfile = this.plugin.settings.activeProfile;
+        if (target != activeProfile ||
+            set.has(BaseProfileName) ||
+            set.has(activeProfile)) {
+            const newRule = target === BaseProfileName ?
+                map.get(BaseProfileName) :
+                map.get(BaseProfileName) + '\n' + map.get(target);
+            await this.plugin.configureProfile(target, newRule);
         }
     }
 
@@ -115,7 +124,7 @@ export class SettingTab extends PluginSettingTab {
         const { containerEl, plugin } = this;
         containerEl.empty();
 
-        containerEl.createEl('h2', {text: 'Typing Transformer Settings'})
+        containerEl.createEl('h2', {text: 'Typing Transformer Settings'});
 
         new Setting(containerEl)
             .setName("Auto Format")
@@ -133,34 +142,7 @@ export class SettingTab extends PluginSettingTab {
                 .onChange(async (_val) => await plugin.toggleIndicator())
             );
 
-        let onProfileFallback: () => void;
-        new Setting(containerEl)
-            .setName("Profile")
-            .setDesc("Select the active profile. NOTE: The 'global' profile will always be active.")
-            .addDropdown((dropdown) => {
-                const refreshOptions = () => {
-                    dropdown.selectEl.innerHTML = '';
-                    for (const title of this.editorState.profilesMap.keys()) {
-                        dropdown.addOption(title, title);
-                    }
-                    dropdown.setValue(this.plugin.settings.activeProfile);
-                };
-                dropdown.selectEl.onClickEvent((ev) => {
-                    if (ev.targetNode != dropdown.selectEl) return;
-                    refreshOptions();
-                });
-                refreshOptions();
-                onProfileFallback = () => { dropdown.setValue(BaseProfileName); }
-                dropdown.onChange(async (value) => {
-                    const map = this.editorState.profilesMap;
-                    const newRule = value === BaseProfileName ?
-                        map.get(BaseProfileName) :                        
-                        map.get(BaseProfileName) + '\n' + map.get(value);
-                    await plugin.configureProfile(value, newRule);
-                });
-            });
-
-        this.ruleEditor = createRuleEditorInContainer(containerEl, plugin, this.editorState, onProfileFallback);
+        this.ruleEditor = createRuleEditorInContainer(containerEl, plugin, this.editorState);
     }
 }
 
@@ -172,7 +154,7 @@ interface State {
     editedProfile: Set<string>
 }
 
-function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTransformer, state: State, onProfileFallback: () => void): EditorView {
+function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTransformer, state: State): EditorView {
     // source: obsidian-latex-suite setting tab, thanks a lot.
     const fragment = document.createDocumentFragment();
     fragment.createEl("span", { text: "Enter conversion, selection, and deletion rules here. NOTES:" }); //line 1
@@ -180,6 +162,8 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
     ol.createEl("li", { text: "Each line is one rule. Rules that come first have higher priority." }); //note 1
     ol.createEl("li", { text: "Lines starting with \"#\" are treated as comments and ignored. Inline comments are also allowed" }); //note 2
     ol.createEl("li", { text: "Certain characters ' | \\ must be escaped with backslashes \\." }); //note 3
+    ol.createEl("li", { text: "Whatever tab you are on when the plugin settings tab quits will be the profile that is chosen" });
+    ol.createEl("li", { text: "The 'global' profile will always be active" });
 
     const convertRulesSetting = new Setting(container)
         .setName("Rules")
@@ -233,21 +217,8 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
         } else {
             updateValidityIndicator(true, []);
             const { selectedProfileName: target, profilesMap: map, editedProfile: set } = state;
-            const activeProfile = plugin.settings.activeProfile;
             map.set(target, newRule);
             set.add(target);
-            if (target === BaseProfileName || set.has(activeProfile)) {
-                log("setting: update rules");
-                let newRule: string;
-                if (activeProfile === BaseProfileName) {
-                    newRule = map.get(BaseProfileName);
-                } else {
-                    newRule = map.get(BaseProfileName) + '\n' + map.get(activeProfile);
-                }
-                // when closing setting, hide will save this settings
-                plugin.settings.convertRules = newRule;
-                plugin.configureRules(newRule);
-            }
         }
     };
 
@@ -284,10 +255,6 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
         if (el === state.selectedProfileEl)
             // switch to base profile
             onProfileClick(BaseProfileName, state.baseProfileEl);
-        if (plugin.settings.activeProfile == name) {
-            onProfileFallback()
-            plugin.configureProfile(BaseProfileName, state.profilesMap.get(BaseProfileName))
-        }
         state.profilesMap.delete(name);
         state.editedProfile.add(name);
         profilesContainer.removeChild(el);
@@ -311,7 +278,7 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
     };
 
     for (const profile of plugin.settings.profiles) {
-        addProfile(profile, profile.title === BaseProfileName);
+        addProfile(profile, profile.title === plugin.settings.activeProfile);
     }
 
     const addButton = new ExtraButtonComponent(profilesContainer).onClick(() => {
@@ -353,26 +320,26 @@ class StringInputModal extends Modal {
             evt.preventDefault();
             this.submit();
         }
-    }
+    };
 
     submit() {
         if (this.onSubmit(this.result)) this.close();
-        else this.err.setText("Profile already exists!")
+        else this.err.setText("Profile already exists!");
     }
 
     onOpen() {
         const { contentEl } = this;
 
-        this.titleEl.setText("Profile Name")
+        this.titleEl.setText("Profile Name");
 
-        const container = this.contentEl.createDiv()
+        const container = this.contentEl.createDiv();
 
-        const textComponent = new TextComponent(container)
+        const textComponent = new TextComponent(container);
         
         textComponent.inputEl.style.width = "100%";
         textComponent
             .onChange((value) => this.result = value )
-            .inputEl.addEventListener('keydown', this.submitEnterCallback)
+            .inputEl.addEventListener('keydown', this.submitEnterCallback);
 
         this.err = container.createEl("p");
 
