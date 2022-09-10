@@ -182,6 +182,30 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
     const validityText = validity.createDiv("rules-editor-validity-text");
     validityText.classList.add("setting-item-description", "rules-editor-validity-txt");
 
+    function resetValidityIndicator() {
+        validityIndicator.setIcon('');
+        validityIndicator.extraSettingsEl.removeClasses(["invalid", "valid"]);
+        validityText.setText('');
+    }
+
+    async function tryResetValidityIndicator(): Promise<boolean> {
+        if (validityIndicator.extraSettingsEl.hasClass("invalid")) {
+            return new Promise((resolve, _reject) => {
+                new ConfirmationModal(
+                    app,
+                    "Are you sure you want to discard changes?",
+                    async (ans: boolean) => {
+                        if (ans) resetValidityIndicator();
+                        resolve(ans);
+                    },
+                ).open();
+            });
+        } else {
+            resetValidityIndicator();
+            return new Promise((resolve, _reject) => resolve(true));
+        }
+    }
+
     function updateValidityIndicator(success: boolean, errs: string[]) {
         validityIndicator.setIcon(success ? "checkmark" : "cross");
         validityIndicator.extraSettingsEl.removeClass(success ? "invalid" : "valid");
@@ -243,7 +267,8 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
             await feedRules(DEFAULT_RULES);
         });
 
-    const onProfileClick = (name: string, el: HTMLElement) => {
+    const onProfileClick = async (name: string, el: HTMLElement) => {
+        if (! await tryResetValidityIndicator()) return;
         state.selectedProfileEl?.removeClass("selected");
         el?.addClass("selected");
         state.selectedProfileEl = el;
@@ -328,31 +353,54 @@ class StringInputModal extends Modal {
     }
 
     onOpen() {
-        const { contentEl } = this;
+        const { titleEl, contentEl } = this;
 
-        this.titleEl.setText("Profile Name");
+        titleEl.setText("Profile Name");
 
-        const container = this.contentEl.createDiv();
-
+        const container = contentEl.createDiv();
         const textComponent = new TextComponent(container);
-        
+        this.err = container.createEl("p");
+
         textComponent.inputEl.style.width = "100%";
         textComponent
-            .onChange((value) => this.result = value )
-            .inputEl.addEventListener('keydown', this.submitEnterCallback);
-
-        this.err = container.createEl("p");
+            .onChange((value) => this.result = value)
+            .inputEl.addEventListener('keydown', this.submitEnterCallback)
 
         new Setting(contentEl)
             .addButton((btn) => btn
                 .setButtonText("Submit")
                 .setCta()
                 .onClick(() => this.submit()));
-        
     }
 
     onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
+        this.contentEl.empty();
+    }
+}
+
+
+
+class ConfirmationModal extends Modal {
+
+    constructor(app: App, prompt: string, conformCb: (ans: boolean) => Promise<void>) {
+        super(app);
+
+        this.contentEl.createEl("p", { text: prompt });
+
+        new Setting(this.contentEl)
+            .addButton(button => button
+                .setButtonText("Conform")
+                .onClick(async () => {
+                    await conformCb(true);
+                    this.close();
+                })
+            )
+            .addButton(button => button
+                .setButtonText("Cancel")
+                .onClick(async () => {
+                    await conformCb(false);
+                    this.close();
+                })
+            );
     }
 }
