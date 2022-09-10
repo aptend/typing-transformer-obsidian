@@ -20,7 +20,7 @@ They can be installed using [nvm](https://github.com/nvm-sh/nvm) on Mac or Linux
 # Install Nvm
 ➜ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
 
-# Install Node and nvm
+# Install Node and npm
 ➜ nvm install --lts
 
 # Installing eslint to lint codes is recommended, but not required
@@ -29,11 +29,14 @@ They can be installed using [nvm](https://github.com/nvm-sh/nvm) on Mac or Linux
 
 ## 2. Compile the plugin
 
-a. Clone the repo and enter the working directory
+a. Clone the repo, enter the working directory and install all dependencies
 ```sh
 ➜ git clone https://github.com/aptend/typing-transformer-obsidian.git
 
 ➜ cd typing-transformer-obsidian
+
+# install all dependencies
+➜ npm install
 ```
 
 b. Create a file named with `.env` and edit the content like this.
