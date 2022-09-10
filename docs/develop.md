@@ -1,20 +1,20 @@
-## Set up dev env
+## 1. Install Dependencies and Set-up Dev Environment
 
-1. Install `Rust`
+a. Install `Rust`
 
 ```sh
 ➜ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-2. Install `wasm-pack`
+b. Install `wasm-pack`
 
 ```sh
 ➜ curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 ```
 
-3. Install `Node` and `npm`
+c. Install `Node` and `npm`
 
-For instance, if you are on Mac and have not installed them, you could install them using `nvm`
+They can be installed using [nvm](https://github.com/nvm-sh/nvm) on Mac or Linux or [nvm-windows](https://github.com/coreybutler/nvm-windows) on Windows.
 
 ```sh
 # Install Nvm
@@ -23,35 +23,35 @@ For instance, if you are on Mac and have not installed them, you could install t
 # Install Node and nvm
 ➜ nvm install --lts
 
-# Recommand to install eslint first to lint codes
+# Installing eslint to lint codes is recommended, but not required
 ➜ npm install -g eslint
 ```
 
-4. Compile the plugin
+## 2. Compile the plugin
 
-- Clone the repo and enter the working directory
+a. Clone the repo and enter the working directory
 ```sh
 ➜ git clone https://github.com/aptend/typing-transformer-obsidian.git
 
 ➜ cd typing-transformer-obsidian
 ```
 
-- Create a file named with `.env` and edit the content like this.
+b. Create a file named with `.env` and edit the content like this.
 
 ```json
 {"target_dir": "<path to the Obsidian Vault>/.obsidian/plugins/typing-transformer-obsidian"}
 ```
 
-- Build!
+c. Build!
 ```sh
 ➜ make build
 ```
 
-5. Others
+## 3. Others
 ```sh
-# if you are developing, try
+# If you are developing, use:
 ➜ make dev
 
-# If you edit the src codes, `make lint` comes to help.
+# If you edit the src codes, `make lint` will help.
 ➜ make lint
 ```
