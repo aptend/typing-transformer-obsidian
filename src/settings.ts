@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, ButtonComponent, ExtraButtonComponent, Notice, Modal, TextComponent } from "obsidian";
+import { App, PluginSettingTab, Setting, ButtonComponent, ExtraButtonComponent, Notice, Modal, TextComponent, Component } from "obsidian";
 import TypingTransformer from "./main";
 import { DEFAULT_RULES } from "./const";
 import { Annotation, EditorState, Extension } from "@codemirror/state";
@@ -364,7 +364,7 @@ class StringInputModal extends Modal {
         textComponent.inputEl.style.width = "100%";
         textComponent
             .onChange((value) => this.result = value)
-            .inputEl.addEventListener('keydown', this.submitEnterCallback)
+            .inputEl.addEventListener('keydown', this.submitEnterCallback);
 
         new Setting(contentEl)
             .addButton((btn) => btn

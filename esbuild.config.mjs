@@ -1,5 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
+import esbuildSvelte from "esbuild-svelte";
+import sveltePreprocess from "svelte-preprocess";
 import builtins from 'builtin-modules'
 import fs from "fs";
 import path from "path";
@@ -73,7 +75,14 @@ esbuild.build({
 	banner: {
 		js: banner,
 	},
-	plugins: [wasmPlugin, copyFile],
+	plugins: [
+		wasmPlugin, 
+		copyFile,
+		esbuildSvelte({
+			compilerOptions: { css: true },
+			preprocess: sveltePreprocess(),
+		  }),
+	],
 	entryPoints: ['src/main.ts'],
 	bundle: true,
 	external: [
