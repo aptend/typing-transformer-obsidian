@@ -10,6 +10,7 @@ import { Rules, DEL_TRIG } from './ext_convert';
 import { libertyZone } from './ext_libertyzone';
 import { type TypingTransformerSettings, SettingTab, DEFAULT_SETTINGS } from './settings';
 import { getAllCommands } from './global_commands';
+import { SettingTab2 } from './settings2';
 
 
 enum ExtID {
@@ -79,6 +80,7 @@ export default class TypingTransformer extends Plugin {
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SettingTab(this.app, this));
+		this.addSettingTab(new SettingTab2(this.app, this));
 		for (const cmd of getAllCommands(this)) {
 			this.addCommand(cmd);
 		}
