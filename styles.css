@@ -98,6 +98,7 @@
     margin-right: 1em;
     cursor: default;
     visibility: hidden;
+    line-height: 0;
 }
 
 

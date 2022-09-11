@@ -1,7 +1,7 @@
 import { App, PluginSettingTab, Setting, ButtonComponent, ExtraButtonComponent, Notice, Modal, TextComponent, Component } from "obsidian";
 import type TypingTransformer from "./main";
 
-import Number from "./components/Number.svelte"
+import RuleEditor from "./components/RuleEditor.svelte"
 
 
 
@@ -18,9 +18,9 @@ export class SettingTab2 extends PluginSettingTab {
     display(): void {
         const { containerEl, plugin } = this;
         containerEl.empty();
-        const number = new Number({
+        const editor = new RuleEditor({
             target: containerEl,
-            props: {variable: 42}
-        })       
+            props: {plugin: plugin},
+        });
     }
 }
