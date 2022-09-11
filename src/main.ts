@@ -1,5 +1,5 @@
-import { Plugin, Pos } from 'obsidian';
-import { Annotation, EditorState, Extension, StateField, Transaction, TransactionSpec } from '@codemirror/state';
+import { Plugin, type Pos } from 'obsidian';
+import { Annotation, EditorState, type Extension, StateField, Transaction, type TransactionSpec } from '@codemirror/state';
 import { EditorView, ViewUpdate } from '@codemirror/view';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm';
@@ -8,7 +8,7 @@ import { PUNCTS } from './const';
 import { initLog, log } from './utils';
 import { Rules, DEL_TRIG } from './ext_convert';
 import { libertyZone } from './ext_libertyzone';
-import { TypingTransformerSettings, SettingTab, DEFAULT_SETTINGS } from './settings';
+import { type TypingTransformerSettings, SettingTab, DEFAULT_SETTINGS } from './settings';
 import { getAllCommands } from './global_commands';
 
 

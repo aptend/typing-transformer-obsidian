@@ -1,7 +1,7 @@
 import { App, PluginSettingTab, Setting, ButtonComponent, ExtraButtonComponent, Notice, Modal, TextComponent, Component } from "obsidian";
-import TypingTransformer from "./main";
+import type TypingTransformer from "./main";
 import { DEFAULT_RULES } from "./const";
-import { Annotation, EditorState, Extension } from "@codemirror/state";
+import { Annotation, EditorState, type Extension } from "@codemirror/state";
 import { EditorView, ViewUpdate, lineNumbers } from "@codemirror/view";
 import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { python } from "@codemirror/lang-python";

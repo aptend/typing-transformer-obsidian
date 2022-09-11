@@ -1,7 +1,7 @@
 
 
-import { Extension } from "@codemirror/state";
-import { ViewPlugin, DecorationSet, ViewUpdate, EditorView, Decoration, WidgetType } from "@codemirror/view";
+import type { Extension } from "@codemirror/state";
+import { ViewPlugin, type DecorationSet, ViewUpdate, EditorView, Decoration, WidgetType } from "@codemirror/view";
 
 // why spotter? because we need the plugin to provide special sections
 export type spotter = (update: ViewUpdate) => { from: number, to: number };
