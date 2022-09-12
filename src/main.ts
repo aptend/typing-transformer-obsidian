@@ -95,7 +95,8 @@ export default class TypingTransformer extends Plugin {
 	async loadSettings() {
 		const data = await this.loadData();
 		let defaultSource = DEFAULT_SETTINGS;
-		if (!data.hasOwnProperty("profiles") && data.convertRules != DEFAULT_SETTINGS.convertRules) {
+		// upgrade from 0.3.1 and before
+		if (data && !data.hasOwnProperty("profiles") && data.convertRules != DEFAULT_SETTINGS.convertRules) {
 			const cloned: TypingTransformerSettings = structuredClone(DEFAULT_SETTINGS);
 			cloned.profiles[0].content = data.convertRules;
 			defaultSource = cloned;
