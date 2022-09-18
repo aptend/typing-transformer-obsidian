@@ -10,6 +10,7 @@ import { Rules, DEL_TRIG } from './ext_convert';
 import { libertyZone } from './ext_libertyzone';
 import { TypingTransformerSettings, SettingTab, DEFAULT_SETTINGS } from './settings';
 import { getAllCommands } from './global_commands';
+import { ProfileModal } from './profilesModal';
 
 
 enum ExtID {
@@ -82,8 +83,13 @@ export default class TypingTransformer extends Plugin {
 		for (const cmd of getAllCommands(this)) {
 			this.addCommand(cmd);
 		}
+		
+		const profileStatus = this.addStatusBarItem();
+		profileStatus.addClass('mod-clickable');
+		profileStatus.addEventListener('click', this.onProfileStatusClick);
+		
+		this.profileStatus = profileStatus;
 
-		this.profileStatus = this.addStatusBarItem();
 		this.updateProfileStatus();
 	}
 
@@ -292,6 +298,10 @@ export default class TypingTransformer extends Plugin {
 
 		if (shouldHijack) { tr = tr.startState.update(...changes); }
 		return tr;
+	};
+
+	onProfileStatusClick = () => {
+		new ProfileModal(this.app, this).open();
 	};
 
 	updateProfileStatus = () => {
