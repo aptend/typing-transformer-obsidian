@@ -123,7 +123,7 @@ export class SettingTab extends PluginSettingTab {
     display(): void {
         const { containerEl, plugin } = this;
         containerEl.empty();
-
+-
         containerEl.createEl('h2', {text: 'Typing Transformer Settings'});
 
         new Setting(containerEl)
@@ -364,7 +364,7 @@ class StringInputModal extends Modal {
         textComponent.inputEl.style.width = "100%";
         textComponent
             .onChange((value) => this.result = value)
-            .inputEl.addEventListener('keydown', this.submitEnterCallback)
+            .inputEl.addEventListener('keydown', this.submitEnterCallback);
 
         new Setting(contentEl)
             .addButton((btn) => btn
