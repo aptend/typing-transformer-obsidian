@@ -13,8 +13,11 @@ export class ProfileModal extends Modal {
     this.selectedProfile = plugin.settings.activeProfile;
   }
   
-  //TODO: Create function to handle selected profile
-
+  configureProfile = async (title: string) => {
+    this.plugin.settings.activeProfile = title;
+    this.plugin.updateProfileStatus();
+    await this.plugin.saveSettings();
+  };
 
   onOpen() {
     const {contentEl} = this;
@@ -24,14 +27,16 @@ export class ProfileModal extends Modal {
       profile.addEventListener('click', () => {
         this.selectedProfile = p;
         this.close();
+        this.plugin.saveSettings();
       })
     });
   }
 
   onClose() {
     console.log(this.selectedProfile)
+    console.log(this.plugin.settings.activeProfile)
+    this.configureProfile(this.selectedProfile)
     const {contentEl} = this;
     contentEl.empty();
   }
-
 }
