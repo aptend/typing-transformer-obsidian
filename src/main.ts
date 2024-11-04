@@ -223,6 +223,9 @@ export default class TypingTransformer extends Plugin {
 			const rspace = toUpdate.length - toUpdate.trimEnd().length;
 			log("foramt: trigger char: %s, toUpdate: %s, lspace: %d, rspace: %d",
 				toUpdate.charAt(toUpdate.length - 1), toUpdate, lspace, rspace);
+			const formatted = formatLine(trimmed);
+			// no need to update if no change. It will block redo/undo stack otherwise.
+			if (formatted === trimmed) { return; }
 			update.view.dispatch({ changes: { from: from + lspace, to: to - rspace, insert: formatLine(trimmed) }, annotations: ProgramTxn.of(true) });
 		}
 	};
