@@ -137,6 +137,11 @@ export default class TypingTransformer extends Plugin {
 		await this.saveAndReloadPlugin();
 	};
 
+	toggleDebugLog = async () => {
+		this.settings.debug = !this.settings.debug;
+		await this.saveAndReloadPlugin();
+	}
+
 	toggleIndicator = async () => {
 		this.settings.zoneIndicatorOn = !this.settings.zoneIndicatorOn;
 		await this.saveAndReloadPlugin();

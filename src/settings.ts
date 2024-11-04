@@ -70,7 +70,7 @@ export interface TypingTransformerSettings {
 export const DEFAULT_SETTINGS: TypingTransformerSettings = {
     debug: false,
     convertRules: DEFAULT_RULES,
-    zoneIndicatorOn: true,
+    zoneIndicatorOn: false,
     autoFormatOn: true,
     profiles: [
         { title: BaseProfileName, content: DEFAULT_RULES },
@@ -125,6 +125,14 @@ export class SettingTab extends PluginSettingTab {
         containerEl.empty();
 
         containerEl.createEl('h2', {text: 'Typing Transformer Settings'});
+
+        new Setting(containerEl)
+            .setName("Debug Log")
+            .setDesc("Enable debug log to console.")
+            .addToggle(comp => comp
+                .setValue(plugin.settings.debug)
+                .onChange(async (_val) => await plugin.toggleDebugLog())
+            );
 
         new Setting(containerEl)
             .setName("Auto Format")
