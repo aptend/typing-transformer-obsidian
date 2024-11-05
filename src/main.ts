@@ -234,21 +234,22 @@ export default class TypingTransformer extends Plugin {
 		if (!tr.docChanged || tr.annotation(ProgramTxn)) { return tr; }
 		let shouldHijack = true; // Hijack when some rules match all changes
 		const changes: TransactionSpec[] = [];
+		const { insertTrigSet, deleteTrigSet, lmax, rmax } = this.rules;
 		tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
 			if (!shouldHijack) { return; }
 
-			const { insertTrigSet, deleteTrigSet, lmax, rmax } = this.rules;
-			let char: string;
+			let trigger: string;
 			if (fromA === toA && fromB + 1 === toB) {
+				// TODO: support emoji as the trigger
 				// insert one char
-				char = inserted.sliceString(0);
-				if (!insertTrigSet.has(char)) { shouldHijack = false; }
+				trigger = inserted.sliceString(0);
+				if (!insertTrigSet.has(trigger)) { shouldHijack = false; }
 			} else if (fromA + 1 === toA && fromB === toB) {
 				// delete one char
 				const delChar = tr.startState.sliceDoc(fromA, toA);
 				if (!deleteTrigSet.has(delChar)) { shouldHijack = false; }
 				// mock inserting a special DEL_TRIG
-				char = DEL_TRIG;
+				trigger = DEL_TRIG;
 				// del: 578 579 578 578 -> insert: 579 579 579 580
 				fromA = toA;
 				fromB += 1;
@@ -259,6 +260,7 @@ export default class TypingTransformer extends Plugin {
 
 			if (!shouldHijack) { return; }
 
+			// As it is true that fromA == toA == fromB == toB - 1, fromB is used to calculate later
 			let leftIdx = fromB - lmax;
 			let insertPosFromLineHead = lmax;
 			if (leftIdx < 0) {
@@ -267,7 +269,7 @@ export default class TypingTransformer extends Plugin {
 				leftIdx = 0;
 			}
 			const input = tr.startState.sliceDoc(leftIdx, fromB + rmax);
-			const rule = this.rules.match(input, char, insertPosFromLineHead);
+			const rule = this.rules.match(input, trigger, insertPosFromLineHead);
 			if (rule != null) {
 				// TODO: record meta info of a rule
 				log("hit covert rule: %s", rule.left.join(""));
