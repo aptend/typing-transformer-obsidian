@@ -210,18 +210,15 @@ class RuleParser {
         while (true) {
             ch = this.eat();
             switch (ch) {
-                case '\\':
+                case "\\":
                     switch (this.peek()) {
                         case "'":
+                        case "\\":
                             result.push(this.eat());
                             break;
                         case "n":
                             this.eat();
                             result.push('\n');
-                            break;
-                        case "\\":
-                            this.eat();
-                            result.push('\\');
                             break;
                         default:
                             result.push(ch);
