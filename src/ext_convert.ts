@@ -219,6 +219,10 @@ class RuleParser {
                             this.eat();
                             result.push('\n');
                             break;
+                        case "\\":
+                            this.eat();
+                            result.push('\\');
+                            break;
                         default:
                             result.push(ch);
                             break;
