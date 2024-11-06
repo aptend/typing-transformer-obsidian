@@ -26,12 +26,6 @@
     outline: none !important;
 }
 
-.rules-editor-wrapper .cm-editor,
-.cm-scroller {
-    border-radius: 4px;
-}
-
-
 .rules-editor-wrapper .cm-line,
 .rules-editor-wrapper .cm-lineNumbers {
     font-family: var(--font-monospace);
