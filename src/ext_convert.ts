@@ -83,6 +83,11 @@ class ConvRule {
     lanchor: number;
     ranchor: number;
     replace: string;
+    // Len Family is used to calculate the modification zone, based on unicode unit length
+    // refer to mapToChanges method for more details
+    lBefore2AnchorLen: number;
+    lAfterAnchorLen: number;
+    rBeforeAnchorLen: number;
     constructor(left: string, right: string, readonly isForDelete: boolean = false) {
         // Actually, a delete rule is treated like a spcial insert rule.
         // the trigger char is DEL_TRIG, which can be issued by program
@@ -96,6 +101,9 @@ class ConvRule {
             this.lanchor += 1;
         }
         this.innerTrig = this.left[this.lanchor - 1];
+        this.rBeforeAnchorLen = this.right.slice(0, this.ranchor).reduce((acc, cur) => acc + cur.length, 0);
+        this.lBefore2AnchorLen = this.left.slice(0, this.lanchor-1).reduce((acc, cur) => acc + cur.length, 0);
+        this.lAfterAnchorLen = this.left.slice(this.lanchor + 1).reduce((acc, cur) => acc + cur.length, 0);
 
         this.replace = this.right.slice(0, this.ranchor).join('') + this.right.slice(this.ranchor + 1).join('');
     }
@@ -117,8 +125,8 @@ class ConvRule {
         return reasons.join("\n");
     }
 
-    // trigChar is used to fill trigSet
-    get trigChar(): string {
+    // trigHintChar is used to fill trigSet
+    get trigHintChar(): string {
         if (this.isForDelete) {
             return this.left[this.lanchor - 2];
         } else {
@@ -144,14 +152,22 @@ class ConvRule {
 
     // pos is the position of trigger char in the whole documnet
     mapToChanges(pos: number): TransactionSpec {
-        // as the trigger char not inserted into doc yet, the relative pos `lanchor - 1` is mapped to absolute postion `pos`
-        // so the start of modification zone is pos + 1 - leftChars = pos + 1 - lanchor
-        // and the end is start + leftLength - 2(which are trig + ANCHOR)
+        // Example: 'abc|defg' -> 'rainbow|'
+        // lanchor = 3, ranchor = 7
+        // Say, the input pos is 120, which means the trigger char `c` is going to be at 120th position in the whole document, and the new cursor position is going to be 121
+        // So the a is at 118, and the modification zone is 118-123, ocuppied by 'abdefg'
+        // The next step is to eliminate 'abdefg' and isnert 'rainbow', and it takes the places from 118 to 124, and the new cursor position is 125
+        // How could we calculate the modification zone?
 
-        const { left, lanchor, ranchor } = this;
-        const from = pos + 1 - lanchor;
-        const to = from + left.length - 2;
-        const newPos = pos + (ranchor - lanchor + 1);
+        // As the trigger char has not benn inserted into doc yet, the `pos` is accutally be hold by left[lanchor-2]
+        // so the start of the modification zone is pos - charLen(left[..(lanchor-1)])
+        // the end is start + charLen(left[..(lanchor-1)]) + charLen(left[lanchor+1..])
+        // the new cursor position is start + charLen(right[..ranchor])
+
+        const { lBefore2AnchorLen, lAfterAnchorLen, rBeforeAnchorLen } = this;
+        const from = pos - lBefore2AnchorLen;
+        const to = pos + lAfterAnchorLen;
+        const newPos = from + rBeforeAnchorLen;
 
         return {
             changes: { from: from, to: to, insert: this.replace },
@@ -377,20 +393,15 @@ export class Rules {
         this.index = newConvRulesIndex(this.rules);
         this.sideInsertMap = parser.sideRules;
 
-        let lmax = 0, rmax = 0; // how many chars should be extracted from doc
         for (const r of this.rules) {
             if (r.isForDelete) {
-                this.deleteTrigSet.add(r.trigChar);
+                this.deleteTrigSet.add(r.trigHintChar);
             } else {
-                this.insertTrigSet.add(r.trigChar);
+                this.insertTrigSet.add(r.trigHintChar);
             }
-            const lmax_ = r.lanchor - 1, rmax_ = r.left.length - 1 - r.lanchor;
-            if (lmax_ > lmax) lmax = lmax_;
-            if (rmax_ > rmax) rmax = rmax_;
+            if (r.lBefore2AnchorLen > this.lmax) this.lmax = r.lBefore2AnchorLen;
+            if (r.lAfterAnchorLen > this.rmax) this.rmax = r.lAfterAnchorLen;
         }
-
-        this.lmax = lmax;
-        this.rmax = rmax;
     }
 
     // match a convert rule
