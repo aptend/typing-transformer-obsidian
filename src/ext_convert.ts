@@ -230,6 +230,7 @@ class RuleParser {
                     switch (this.peek()) {
                         case "'":
                         case "\\":
+                        case "|":
                             result.push(this.eat());
                             break;
                         case "n":
@@ -248,6 +249,9 @@ class RuleParser {
                     return Err("Expected a rule ending with ', but found newline. Note: escape intentional newline with '\\n'");
                 case EOF:
                     return Err("Expected a rule ending with ', but found nothing");
+                case "|":
+                    result.push(ANCHOR);
+                    break
                 default:
                     result.push(ch);
                     break;
@@ -374,12 +378,7 @@ export class Rules {
     lmax: number;
     rmax: number;
     constructor(ruletxt: string, justCheck=false) {
-        // TODO: handle escape in parser?
-        const unescapedTxt = ruletxt
-            .replaceAll("\\|", "{0v0}") // to a placeholder
-            .replaceAll("|", ANCHOR)
-            .replaceAll("{0v0}", "|"); // and convert it back
-        const parser = new RuleParser(unescapedTxt);
+        const parser = new RuleParser(ruletxt);
         parser.parse();
         this.rules = [];
         this.insertTrigSet = new Set<string>();
