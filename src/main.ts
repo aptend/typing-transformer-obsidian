@@ -1,4 +1,4 @@
-import { Plugin, Pos } from 'obsidian';
+import { FileSystemAdapter, Plugin, Pos } from 'obsidian';
 import { Annotation, EditorState, Extension, StateField, Transaction, TransactionSpec } from '@codemirror/state';
 import { EditorView, ViewUpdate } from '@codemirror/view';
 
@@ -42,9 +42,13 @@ export default class TypingTransformer extends Plugin {
 	availablExts: Extension[];
 	activeExts: Extension[];
 	profileStatus: HTMLElement;
+	basePath: string;
 
 	// Lifetime
 	async onload() {
+		if (this.app.vault.adapter instanceof FileSystemAdapter) {
+			this.basePath = this.app.vault.adapter.getBasePath();
+		}
 		console.log('loading typing transformer plugin');
 		// read saved settings
 		await this.loadSettings();
@@ -115,11 +119,11 @@ export default class TypingTransformer extends Plugin {
 	};
 
 	configureRules = (ruleString: string) => {
-		this.rules = new Rules(ruleString);
+		this.rules = new Rules(ruleString, false, this.basePath);
 	};
 
 	checkRules = (ruleString: string): string[] => {
-		return new Rules(ruleString, true).errors;
+		return new Rules(ruleString, true, this.basePath).errors;
 	};
 
 	configureActiveExtsFromSettings = () => {
