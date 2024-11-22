@@ -1,4 +1,6 @@
 import { TransactionSpec } from "@codemirror/state";
+import { readFileSync, existsSync, stat, statSync } from "fs";
+import { join } from "path";
 
 const EOF = "EOF";
 const ANCHOR = "¦";
@@ -61,6 +63,7 @@ enum RuleType {
 enum ArrowType {
     Insert, // ->
     Delete, // -x
+    Import, // -f
 }
 
 class Rule {
@@ -184,12 +187,16 @@ class RuleParser {
     convRules: ConvRule[];
     sideRules: Map<string, { l: string, r: string }>;
     errors: string[];
-    constructor(input: string) {
+    justCheck: boolean;
+    basePath: string;
+    constructor(input: string, justCheck=false, basePath: string = "") {
         this.idx = 0;
         this.input = Array.from(input);
         this.convRules = [];
         this.sideRules = new Map();
         this.errors = [];
+        this.justCheck = justCheck;
+        this.basePath = basePath;
     }
 
 
@@ -266,8 +273,10 @@ class RuleParser {
             return Ok(ArrowType.Insert);
         } else if (first === '-' && second === 'x') {
             return Ok(ArrowType.Delete);
+        } else if (first === '-' && second === 'f') {
+            return Ok(ArrowType.Import);
         }
-        return Err(`Expected -> or -x, but found ${readable(first)}${readable(second)}`);
+        return Err(`Expected ->, -x or -f, but found ${readable(first)}${readable(second)}`);
     }
 
     private parseComment(): ParseResult<string> {
@@ -322,7 +331,25 @@ class RuleParser {
             rule.type = RuleType.SideRule;
             rule.side = sideRule;
         } else {
-            const convRule = new ConvRule(r1.value, r3.value, r2.value === ArrowType.Delete);
+            let leftPart = r1.value;
+            let rightPart = r3.value;
+            let arrowType = r2.value;
+            if (r2.value === ArrowType.Import) {
+                // read the file to replace r3
+                const path = join(this.basePath,  r3.value);
+               
+                if (r3.value === "" || !existsSync(path) || !statSync(path).isFile()) {
+                    return Err(`File not found: "${r3.value}"`);
+                }
+                if (this.justCheck) {
+                    rightPart = ANCHOR;
+                } else {
+                    const content = readFileSync(path, 'utf-8');
+                    rightPart = content + ANCHOR;
+                }
+                arrowType = ArrowType.Insert;
+            }
+            const convRule = new ConvRule(leftPart, rightPart, arrowType === ArrowType.Delete);
             if (!convRule.isValid) {
                 return Err(convRule.invalidReasons());
             }
@@ -377,8 +404,8 @@ export class Rules {
     deleteTrigSet: Set<string>;
     lmax: number;
     rmax: number;
-    constructor(ruletxt: string, justCheck=false) {
-        const parser = new RuleParser(ruletxt);
+    constructor(ruletxt: string, justCheck=false, basePath: string = "") {
+        const parser = new RuleParser(ruletxt, justCheck, basePath);
         parser.parse();
         this.rules = [];
         this.insertTrigSet = new Set<string>();
