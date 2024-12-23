@@ -1,6 +1,7 @@
 import { FileSystemAdapter, Plugin, Pos } from 'obsidian';
 import { Annotation, EditorState, Extension, StateField, Transaction, TransactionSpec } from '@codemirror/state';
 import { EditorView, ViewUpdate } from '@codemirror/view';
+import {history} from '@codemirror/commands';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm';
 import init, { formatLine, getBlockRanges } from '../liberty-web/charliberty';
@@ -58,7 +59,7 @@ export default class TypingTransformer extends Plugin {
 		this.specialSections = [];
 		this.activeExts = [];
 		this.availablExts = [
-			EditorState.transactionFilter.of(this.sidesInsertFilter),
+			[EditorView.updateListener.of(this.sideInsert), history({ joinToEvent: (tr, isAdj) => !tr.annotation(ProgramTxn) && isAdj })],
 			EditorState.transactionFilter.of(this.convertFilter),
 			libertyZone(this.spotLibertyZone),
 			EditorView.updateListener.of(this.addLiberty),
@@ -289,24 +290,27 @@ export default class TypingTransformer extends Plugin {
 		return tr;
 	};
 
-	sidesInsertFilter = (tr: Transaction): TransactionSpec | readonly TransactionSpec[] => {
-		if (!tr.docChanged || tr.annotation(ProgramTxn)) { return tr; }
-		let shouldHijack = true;
-		const changes: TransactionSpec[] = [];
-		tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
-			const char = inserted.sliceString(0);
-			if (!shouldHijack || fromA == toA || toB != fromB + 1 || !this.rules.sideInsertMap.has(char)) {
-				shouldHijack = false;
-				return;
+	sideInsert = (update: ViewUpdate) => {
+		if (!update.docChanged) { return; }
+		update.transactions.forEach((tr) => {
+			if (tr.isUserEvent("undo") || tr.isUserEvent("redo") || tr.annotation(ProgramTxn)) { return; }
+			let shouldHijack = true;
+			const changes: TransactionSpec[] = [];
+			tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
+				const char = inserted.sliceString(0);
+				if (!shouldHijack || fromA == toA || toB != fromB + 1 || !this.rules.sideInsertMap.has(char)) {
+					shouldHijack = false;
+					return;
+				}
+				const insert = this.rules.sideInsertMap.get(char);
+				const replacedText = tr.startState.sliceDoc(fromA, toA);
+				changes.push({ changes: { from: fromA, to: fromA + 1, insert: insert.l + replacedText + insert.r }, annotations: ProgramTxn.of(true) });
+			});
+			if (shouldHijack) {
+				update.view.dispatch(...changes);
 			}
-			const insert = this.rules.sideInsertMap.get(char);
-			changes.push({ changes: { from: fromA, insert: insert.l }, annotations: ProgramTxn.of(true) });
-			changes.push({ changes: { from: toA, insert: insert.r }, annotations: ProgramTxn.of(true) });
 		});
-
-		if (shouldHijack) { tr = tr.startState.update(...changes); }
-		return tr;
-	};
+	}
 
 	updateProfileStatus = () => {
 		this.profileStatus.setText(`Active Profile: ${this.settings.activeProfile}`);
