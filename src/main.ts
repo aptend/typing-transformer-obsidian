@@ -1,5 +1,6 @@
 import { FileSystemAdapter, Plugin, Pos } from 'obsidian';
 import { Annotation, EditorState, Extension, StateField, Transaction, TransactionSpec } from '@codemirror/state';
+import { history } from '@codemirror/commands';
 import { EditorView, ViewUpdate } from '@codemirror/view';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm';
@@ -59,7 +60,7 @@ export default class TypingTransformer extends Plugin {
 		this.activeExts = [];
 		this.availablExts = [
 			EditorState.transactionFilter.of(this.sidesInsertFilter),
-			EditorState.transactionFilter.of(this.convertFilter),
+			EditorView.updateListener.of(this.convertFilter),
 			libertyZone(this.spotLibertyZone),
 			EditorView.updateListener.of(this.addLiberty),
 			deubgExt,
@@ -134,6 +135,11 @@ export default class TypingTransformer extends Plugin {
 		autoFormatOn ? activeIds.push(ExtID.AutoFormat) : null;
 		this.activeExts.forEach((_ext, idx) => this.activeExts[idx] = []);
 		activeIds.forEach((extid) => this.activeExts[extid] = this.availablExts[extid]);
+		this.activeExts.push(history({
+			joinToEvent: (tr: Transaction, isAdjacent: boolean) => {
+				return !tr.annotation(ProgramTxn) && isAdjacent;
+			}
+		}));
 	};
 
 	toggleAutoFormat = async () => {
@@ -234,23 +240,22 @@ export default class TypingTransformer extends Plugin {
 		}
 	};
 
-	convertFilter = (tr: Transaction): TransactionSpec | readonly TransactionSpec[] => {
-		if (!tr.docChanged || tr.annotation(ProgramTxn)) { return tr; }
+	convertFilter = (update: ViewUpdate) => {
+		if (!update.docChanged || update.transactions.some(tr => tr.annotation(ProgramTxn))) { return; }
 		let shouldHijack = true; // Hijack when some rules match all changes
 		const changes: TransactionSpec[] = [];
 		const { insertTrigSet, deleteTrigSet, lmax, rmax } = this.rules;
-		tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
+		update.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
 			if (!shouldHijack) { return; }
 
 			let trigger: string;
-			if (fromA === toA && fromB + 1 === toB) {
+			if (fromA === toA && fromB + 1 === toB) { // insert one char
 				// TODO: support emoji as the trigger
-				// insert one char
 				trigger = inserted.sliceString(0);
 				if (!insertTrigSet.has(trigger)) { shouldHijack = false; }
-			} else if (fromA + 1 === toA && fromB === toB) {
-				// delete one char
-				const delChar = tr.startState.sliceDoc(fromA, toA);
+			} else if (fromA + 1 === toA && fromB === toB) { // delete one char
+				// TODO: support emoji as the del trigger
+				const delChar = update.startState.sliceDoc(fromA, toA);
 				if (!deleteTrigSet.has(delChar)) { shouldHijack = false; }
 				// mock inserting a special DEL_TRIG
 				trigger = DEL_TRIG;
@@ -265,19 +270,20 @@ export default class TypingTransformer extends Plugin {
 			if (!shouldHijack) { return; }
 
 			// As it is true that fromA == toA == fromB == toB - 1, fromB is used to calculate later
+			// extract the doc to be replaced.
 			let leftIdx = fromB - lmax;
-			let insertPosFromLineHead = lmax;
+			let insertPosFromInputTextHead = lmax;
 			if (leftIdx < 0) {
 				// at the very beginning of the document, we don't have enough chars required by lmax 
-				insertPosFromLineHead = lmax + leftIdx;
 				leftIdx = 0;
+				insertPosFromInputTextHead = fromB;
 			}
-			const input = tr.startState.sliceDoc(leftIdx, fromB + rmax);
-			const rule = this.rules.match(input, trigger, insertPosFromLineHead);
+			const input = update.startState.sliceDoc(leftIdx, fromB + rmax);
+			const rule = this.rules.match(input, trigger, insertPosFromInputTextHead);
 			if (rule != null) {
 				// TODO: record meta info of a rule
 				log("hit covert rule: %s", rule.left.join(""));
-				const change = rule.mapToChanges(fromB);
+				const change = rule.mapToChanges(fromB, trigger === DEL_TRIG);
 				change.annotations = ProgramTxn.of(true);
 				changes.push(change);
 			} else {
@@ -285,8 +291,8 @@ export default class TypingTransformer extends Plugin {
 			}
 		});
 
-		if (shouldHijack) { tr = tr.startState.update(...changes); }
-		return tr;
+		if (shouldHijack) { update.view.dispatch(...changes); }
+		return;
 	};
 
 	sidesInsertFilter = (tr: Transaction): TransactionSpec | readonly TransactionSpec[] => {
