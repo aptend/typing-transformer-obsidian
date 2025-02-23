@@ -88,7 +88,9 @@ class ConvRule {
     replace: string;
     // Len Family is used to calculate the modification zone, based on unicode unit length
     // refer to mapToChanges method for more details
+    lBeforeAnchorLen: number;
     lBefore2AnchorLen: number;
+    lBefore3AnchorLen: number; // used only in Del rule. nonsense for insert rule
     lAfterAnchorLen: number;
     rBeforeAnchorLen: number;
     constructor(left: string, right: string, readonly isForDelete: boolean = false) {
@@ -105,7 +107,11 @@ class ConvRule {
         }
         this.innerTrig = this.left[this.lanchor - 1];
         this.rBeforeAnchorLen = this.right.slice(0, this.ranchor).reduce((acc, cur) => acc + cur.length, 0);
+        this.lBeforeAnchorLen = this.left.slice(0, this.lanchor).reduce((acc, cur) => acc + cur.length, 0);
         this.lBefore2AnchorLen = this.left.slice(0, this.lanchor-1).reduce((acc, cur) => acc + cur.length, 0);
+        if (isForDelete) {
+            this.lBefore3AnchorLen = this.left.slice(0, this.lanchor-2).reduce((acc, cur) => acc + cur.length, 0);
+        }
         this.lAfterAnchorLen = this.left.slice(this.lanchor + 1).reduce((acc, cur) => acc + cur.length, 0);
 
         this.replace = this.right.slice(0, this.ranchor).join('') + this.right.slice(this.ranchor + 1).join('');
@@ -154,24 +160,49 @@ class ConvRule {
     }
 
     // pos is the position of trigger char in the whole documnet
-    mapToChanges(pos: number): TransactionSpec {
+    mapToChanges(pos: number, isDel: boolean): TransactionSpec {
+        // Insert
         // Example: 'abc|defg' -> 'rainbow|'
         // lanchor = 3, ranchor = 7
-        // Say, the input pos is 120, which means the trigger char `c` is going to be at 120th position in the whole document, and the new cursor position is going to be 121
-        // So the a is at 118, and the modification zone is 118-123, ocuppied by 'abdefg'
+        // Say, the input pos is 120, which means the trigger char `c` is already placed at 120th position in the whole document, and the new cursor position at 121
+        // So the a is at 118, and the modification zone is 118-124, ocuppied by 'abcdefg'
         // The next step is to eliminate 'abdefg' and isnert 'rainbow', and it takes the places from 118 to 124, and the new cursor position is 125
         // How could we calculate the modification zone?
 
-        // As the trigger char has not benn inserted into doc yet, the `pos` is accutally be hold by left[lanchor-2]
-        // so the start of the modification zone is pos - charLen(left[..(lanchor-1)])
-        // the end is start + charLen(left[..(lanchor-1)]) + charLen(left[lanchor+1..])
-        // the new cursor position is start + charLen(right[..ranchor])
+        // the `pos` is accutally be hold by left[lanchor-1], which is c
+        // so the start of the modification zone is pos - charLen(left[..lanchor-1]), 120 - charLen('ab')
+        // the end is start + charLen(left[..lanchor]) + charLen(left[lanchor+1..]),  120 + charLen('abc') + charLen('defg)' 
+        // the new cursor position is start + charLen(right[..ranchor]), 120 - charLen('abc') + charLen('rainbow|')
 
-        const { lBefore2AnchorLen, lAfterAnchorLen, rBeforeAnchorLen } = this;
-        const from = pos - lBefore2AnchorLen;
-        const to = pos + lAfterAnchorLen;
+        // Delete
+        // Example: '(❌|)' -> '|'
+        // lanchor = 1, ranchor = 0
+        // Say, the input pos is 120, which means the trigger char `❌` is going to be at 120th position in the whole document, and the new cursor position is going to be 121. However, this is the special assumpation for the delete rule to be represented like a insert rule. Actually, the left ( is already deleted, and the right ) is at 119.
+        // so the start of the modification zone is pos - 1 - charLen(left[..lanchor-2]), 120 - 1 - charLen('')
+        // the end is start + charLen(left[..lanchor-2]) + charLen(left[lanchor+1..])
+        // the new cursor is start + charLen(right[..ranchor])
+
+
+        const { lBefore3AnchorLen, lBefore2AnchorLen, lBeforeAnchorLen, lAfterAnchorLen, rBeforeAnchorLen } = this;
+
+        let modificationSpan: number;
+        let startOffset: number;
+        if (isDel) {
+            pos = pos - 1 
+            startOffset = lBefore3AnchorLen
+            modificationSpan = lBefore3AnchorLen + lAfterAnchorLen
+        } else {
+            startOffset = lBefore2AnchorLen
+            modificationSpan = lBeforeAnchorLen + lAfterAnchorLen
+        }
+
+
+        const from = pos - startOffset
+        if (from < 0) {
+            console.log("bad pos for map", pos, lBefore2AnchorLen, this.left, this.right)
+        }
+        const to = from + modificationSpan;
         const newPos = from + rBeforeAnchorLen;
-
         return {
             changes: { from: from, to: to, insert: this.replace },
             selection: { anchor: newPos, head: newPos }
