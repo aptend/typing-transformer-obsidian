@@ -432,8 +432,9 @@ export class Rules {
 
     // match a convert rule
     match(input: string, insChar: string, insPosBaseLineHead: number): ConvRule {
-        const leftMatch = input.slice(0, insPosBaseLineHead);
-        const candidates = this.index.collectIdxsAlong(leftMatch + insChar);
+        const leftMatch = Array.from(input.slice(0, insPosBaseLineHead));
+        leftMatch.push(insChar)
+        const candidates = this.index.collectIdxsAlong(leftMatch);
 
         // Are you insane? If compareFn omitted, 'the elements are sorted in ascending, ASCII character order' ????????
         // I am so small in face of Lord Javascript.
@@ -487,7 +488,7 @@ class TrieNode {
         node.value.push(idx);
     }
 
-    collectIdxsAlong(key: string): number[] {
+    collectIdxsAlong(key: string[]): number[] {
         const idxs = [];
 
         let node: TrieNode = this;
