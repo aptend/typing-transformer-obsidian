@@ -36,6 +36,10 @@ const deubgExt = StateField.define({
 	}
 });
 
+function ignoreThisTr(tr: Transaction): boolean {
+	return !tr.docChanged || tr.annotation(ProgramTxn) || tr.isUserEvent('redo') || tr.isUserEvent('undo');
+}
+
 export default class TypingTransformer extends Plugin {
 	settings: TypingTransformerSettings;
 	specialSections: Pos[];
@@ -224,6 +228,7 @@ export default class TypingTransformer extends Plugin {
 		const range = this.spotLibertyZone(update);
 		// selectionSet is important, recursive call otherwise.
 		if (range === undefined || !update.selectionSet) { return; }
+		if (update.transactions.some(tr => ignoreThisTr(tr))) { return; }
 		const from = range.from, to = range.to;
 		const toUpdate = update.view.state.doc.sliceString(from, to);
 		if (PUNCTS.has(toUpdate.charAt(toUpdate.length - 1))) {
@@ -241,7 +246,7 @@ export default class TypingTransformer extends Plugin {
 	};
 
 	convertFilter = (update: ViewUpdate) => {
-		if (!update.docChanged || update.transactions.some(tr => tr.annotation(ProgramTxn))) { return; }
+		if (!update.docChanged || update.transactions.some(tr => ignoreThisTr(tr))) { return; }
 		let shouldHijack = true; // Hijack when some rules match all changes
 		const changes: TransactionSpec[] = [];
 		const { insertTrigSet, deleteTrigSet, lmax, rmax } = this.rules;
@@ -296,7 +301,7 @@ export default class TypingTransformer extends Plugin {
 	};
 
 	sidesInsertFilter = (tr: Transaction): TransactionSpec | readonly TransactionSpec[] => {
-		if (!tr.docChanged || tr.annotation(ProgramTxn)) { return tr; }
+		if (ignoreThisTr(tr)) { return tr; }
 		let shouldHijack = true;
 		const changes: TransactionSpec[] = [];
 		tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
