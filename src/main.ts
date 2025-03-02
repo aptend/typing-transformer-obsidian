@@ -63,7 +63,7 @@ export default class TypingTransformer extends Plugin {
 		this.specialSections = [];
 		this.activeExts = [];
 		this.availablExts = [
-			EditorState.transactionFilter.of(this.sidesInsertFilter),
+			EditorView.updateListener.of(this.sidesInsertFilter),
 			EditorView.updateListener.of(this.convertFilter),
 			libertyZone(this.spotLibertyZone),
 			EditorView.updateListener.of(this.addLiberty),
@@ -300,23 +300,22 @@ export default class TypingTransformer extends Plugin {
 		return;
 	};
 
-	sidesInsertFilter = (tr: Transaction): TransactionSpec | readonly TransactionSpec[] => {
-		if (ignoreThisTr(tr)) { return tr; }
+	sidesInsertFilter = (update: ViewUpdate) => {
+		if (!update.docChanged || update.transactions.some(tr => ignoreThisTr(tr))) { return; }
 		let shouldHijack = true;
 		const changes: TransactionSpec[] = [];
-		tr.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
+		update.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
 			const char = inserted.sliceString(0);
 			if (!shouldHijack || fromA == toA || toB != fromB + 1 || !this.rules.sideInsertMap.has(char)) {
 				shouldHijack = false;
 				return;
 			}
 			const insert = this.rules.sideInsertMap.get(char);
-			changes.push({ changes: { from: fromA, insert: insert.l }, annotations: ProgramTxn.of(true) });
-			changes.push({ changes: { from: toA, insert: insert.r }, annotations: ProgramTxn.of(true) });
+			const replaced = update.startState.sliceDoc(fromA, toA);
+			changes.push({ changes: { from: fromB, to: toB, insert: insert.l + replaced + insert.r }, annotations: ProgramTxn.of(true) });
 		});
 
-		if (shouldHijack) { tr = tr.startState.update(...changes); }
-		return tr;
+		if (shouldHijack) { update.view.dispatch(...changes); }
 	};
 
 	updateProfileStatus = () => {
