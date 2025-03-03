@@ -144,15 +144,12 @@ class ConvRule {
     }
 
     canConvert(inputS: string, insChr: string, insPosBaseHead: number): boolean {
-        const input = Array.from(inputS);
         if (!this.isValid || insChr != this.innerTrig) return false;
-
         const { left, lanchor } = this;
-
         // most rules match left part first, here we check again for good
-        if (!suffixOf(left.slice(0, lanchor - 1), input.slice(0, insPosBaseHead))) return false;
+        if (!suffixOf(left.slice(0, lanchor - 1), Array.from(inputS.slice(0, insPosBaseHead)))) return false;
         // left matched and then match right
-        return prefixOf(left.slice(lanchor + 1), input.slice(insPosBaseHead));
+        return prefixOf(left.slice(lanchor + 1), Array.from(inputS.slice(insPosBaseHead)));
     }
 
     leftMatchPart(): string[] {
@@ -466,7 +463,6 @@ export class Rules {
         const leftMatch = Array.from(input.slice(0, insPosBaseLineHead));
         leftMatch.push(insChar)
         const candidates = this.index.collectIdxsAlong(leftMatch);
-
         // Are you insane? If compareFn omitted, 'the elements are sorted in ascending, ASCII character order' ????????
         // I am so small in face of Lord Javascript.
         for (const idx of candidates.sort((a, b) => a - b)) {
