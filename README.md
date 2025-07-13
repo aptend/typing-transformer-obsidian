@@ -116,3 +116,7 @@ Auto-formatting triggers by sentence fragments; the insertion of space occurs wh
 *Note: Auto-formatting only supports Chinese and English as of now.*
 
 To learn more about the internal workings, see [How it works.md](https://github.com/aptend/typing-transformer-obsidian/blob/main/docs/How%20it%20works.md)
+
+## Contributing
+
+If you'd like to make a contribution to this plugin please follow the procedure documented [here](docs/Development.md)
