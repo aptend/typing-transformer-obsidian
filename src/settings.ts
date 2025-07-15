@@ -373,7 +373,7 @@ class StringInputModal extends Modal {
         textComponent.inputEl.style.width = "100%";
         textComponent
             .onChange((value) => this.result = value)
-            .inputEl.addEventListener('keydown', this.submitEnterCallback)
+            .inputEl.addEventListener('keydown', this.submitEnterCallback);
 
         new Setting(contentEl)
             .addButton((btn) => btn

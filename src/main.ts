@@ -1,5 +1,5 @@
 import { FileSystemAdapter, Plugin, Pos } from 'obsidian';
-import { Annotation, EditorState, Extension, StateField, Transaction, TransactionSpec } from '@codemirror/state';
+import { Annotation, Extension, StateField, Transaction, TransactionSpec } from '@codemirror/state';
 import { history } from '@codemirror/commands';
 import { EditorView, ViewUpdate } from '@codemirror/view';
 
@@ -103,7 +103,10 @@ export default class TypingTransformer extends Plugin {
 		const data = await this.loadData();
 		let defaultSource = DEFAULT_SETTINGS;
 		// upgrade from 0.3.1 and before
-		if (data && !data.hasOwnProperty("profiles") && data.convertRules != DEFAULT_SETTINGS.convertRules) {
+		if (data && 
+			!Object.prototype.hasOwnProperty.call(data, "profiles") && 
+			data.convertRules != DEFAULT_SETTINGS.convertRules) 
+		{
 			const cloned: TypingTransformerSettings = structuredClone(DEFAULT_SETTINGS);
 			cloned.profiles[0].content = data.convertRules;
 			defaultSource = cloned;
@@ -134,9 +137,9 @@ export default class TypingTransformer extends Plugin {
 	configureActiveExtsFromSettings = () => {
 		const activeIds = [ExtID.Conversion, ExtID.SideInsert];
 		const { debug, zoneIndicatorOn, autoFormatOn } = this.settings;
-		debug ? activeIds.push(ExtID.Debug) : null;
-		zoneIndicatorOn ? activeIds.push(ExtID.ZoneIndicator) : null;
-		autoFormatOn ? activeIds.push(ExtID.AutoFormat) : null;
+		if (debug) { activeIds.push(ExtID.Debug); }
+		if (zoneIndicatorOn) { activeIds.push(ExtID.ZoneIndicator); }
+		if (autoFormatOn) { activeIds.push(ExtID.AutoFormat); }
 		this.activeExts.forEach((_ext, idx) => this.activeExts[idx] = []);
 		activeIds.forEach((extid) => this.activeExts[extid] = this.availablExts[extid]);
 		this.activeExts.push(history({
@@ -154,7 +157,7 @@ export default class TypingTransformer extends Plugin {
 	toggleDebugLog = async () => {
 		this.settings.debug = !this.settings.debug;
 		await this.saveAndReloadPlugin();
-	}
+	};
 
 	toggleIndicator = async () => {
 		this.settings.zoneIndicatorOn = !this.settings.zoneIndicatorOn;
