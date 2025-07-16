@@ -1,5 +1,5 @@
 import { TransactionSpec } from "@codemirror/state";
-import { readFileSync, existsSync, stat, statSync } from "fs";
+import { readFileSync, existsSync, statSync } from "fs";
 import { join } from "path";
 
 const EOF = "EOF";
@@ -185,18 +185,18 @@ class ConvRule {
         let modificationSpan: number;
         let startOffset: number;
         if (isDel) {
-            pos = pos - 1 
-            startOffset = lBefore3AnchorLen
-            modificationSpan = lBefore3AnchorLen + lAfterAnchorLen
+            pos = pos - 1; 
+            startOffset = lBefore3AnchorLen;
+            modificationSpan = lBefore3AnchorLen + lAfterAnchorLen;
         } else {
-            startOffset = lBefore2AnchorLen
-            modificationSpan = lBeforeAnchorLen + lAfterAnchorLen
+            startOffset = lBefore2AnchorLen;
+            modificationSpan = lBeforeAnchorLen + lAfterAnchorLen;
         }
 
 
-        const from = pos - startOffset
+        const from = pos - startOffset;
         if (from < 0) {
-            console.log("bad pos for map", pos, lBefore2AnchorLen, this.left, this.right)
+            console.log("bad pos for map", pos, lBefore2AnchorLen, this.left, this.right);
         }
         const to = from + modificationSpan;
         const newPos = from + rBeforeAnchorLen;
@@ -286,7 +286,7 @@ class RuleParser {
                     return Err("Expected a rule ending with ', but found nothing");
                 case "|":
                     result.push(ANCHOR);
-                    break
+                    break;
                 default:
                     result.push(ch);
                     break;
@@ -359,7 +359,7 @@ class RuleParser {
             rule.type = RuleType.SideRule;
             rule.side = sideRule;
         } else {
-            let leftPart = r1.value;
+            const leftPart = r1.value;
             let rightPart = r3.value;
             let arrowType = r2.value;
             if (r2.value === ArrowType.Import) {
@@ -461,7 +461,7 @@ export class Rules {
     // match a convert rule
     match(input: string, insChar: string, insPosBaseLineHead: number): ConvRule {
         const leftMatch = Array.from(input.slice(0, insPosBaseLineHead));
-        leftMatch.push(insChar)
+        leftMatch.push(insChar);
         const candidates = this.index.collectIdxsAlong(leftMatch);
         // Are you insane? If compareFn omitted, 'the elements are sorted in ascending, ASCII character order' ????????
         // I am so small in face of Lord Javascript.

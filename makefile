@@ -22,4 +22,4 @@ dev: $(liberty-js)
 	npm run dev
 
 lint:
-	eslint src --fix
+	npx eslint src --fix

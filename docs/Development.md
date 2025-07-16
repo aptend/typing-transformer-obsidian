@@ -23,8 +23,6 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
 # Install Node and npm
 nvm install --lts
 
-# Installing eslint to lint codes is recommended, but not required
-npm install -g eslint
 ```
 
 ## 2. Compile the plugin
