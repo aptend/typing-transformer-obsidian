@@ -72,7 +72,7 @@ export default class TypingTransformer extends Plugin {
 		this.availablExts.forEach((_, idx) => this.activeExts[idx] = []);
 
 		// parse saved rules
-		this.configureRules(this.settings.convertRules);
+		await this.configureRules(this.settings.convertRules);
 		// activate selected extensions
 		this.configureActiveExtsFromSettings();
 		this.registerEditorExtension(this.activeExts);
@@ -121,17 +121,20 @@ export default class TypingTransformer extends Plugin {
 	configureProfile = async (title: string, ruleString: string) => {
 		this.settings.activeProfile = title;
 		this.settings.convertRules = ruleString;
-		this.configureRules(ruleString);
+		await this.configureRules(ruleString);
 		this.updateProfileStatus();
 		await this.saveSettings();
 	};
 
-	configureRules = (ruleString: string) => {
-		this.rules = new Rules(ruleString, false, this.basePath);
+	configureRules = async (ruleString: string) => {
+		this.rules = new Rules();
+		await this.rules.parse(ruleString, false, this.basePath);
 	};
 
-	checkRules = (ruleString: string): string[] => {
-		return new Rules(ruleString, true, this.basePath).errors;
+	checkRules = async (ruleString: string): Promise<string[]> => {
+		this.rules = new Rules();
+		await this.rules.parse(ruleString, true, this.basePath);
+		return this.rules.errors;
 	};
 
 	configureActiveExtsFromSettings = () => {

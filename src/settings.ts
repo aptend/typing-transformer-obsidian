@@ -244,7 +244,7 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
     ];
 
     const feedRules = async (newRule: string) => {
-        const errs = plugin.checkRules(newRule);
+        const errs = await plugin.checkRules(newRule);
         if (errs.length != 0) {
             updateValidityIndicator(false, errs);
         } else {
