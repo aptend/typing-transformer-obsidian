@@ -169,7 +169,8 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
     const ol = fragment.createEl("ol");
     ol.createEl("li", { text: "Each line is one rule. Rules that come first have higher priority." }); //note 1
     ol.createEl("li", { text: "Lines starting with \"#\" are treated as comments and ignored. Inline comments are also allowed" }); //note 2
-    ol.createEl("li", { text: "Certain characters ' | \\ must be escaped with backslashes \\." }); //note 3
+    ol.createEl("li", { text: "The character '|' indicates where your cursor will be placed after the rule is applied."}); //note 3
+    ol.createEl("li", { text: "To use special characters like '|' for conversion, you escape them with a backslash, for example: '\\|' "}); 
     ol.createEl("li", { text: "Whatever tab you are on when the plugin settings tab quits will be the profile that is chosen" });
     ol.createEl("li", { text: "The 'global' profile will always be active" });
 
@@ -390,23 +391,23 @@ class StringInputModal extends Modal {
 
 class ConfirmationModal extends Modal {
 
-    constructor(app: App, prompt: string, conformCb: (ans: boolean) => Promise<void>) {
+    constructor(app: App, prompt: string, confirmCb: (ans: boolean) => Promise<void>) {
         super(app);
 
         this.contentEl.createEl("p", { text: prompt });
 
         new Setting(this.contentEl)
             .addButton(button => button
-                .setButtonText("Conform")
+                .setButtonText("Confirm")
                 .onClick(async () => {
-                    await conformCb(true);
+                    await confirmCb(true);
                     this.close();
                 })
             )
             .addButton(button => button
                 .setButtonText("Cancel")
                 .onClick(async () => {
-                    await conformCb(false);
+                    await confirmCb(false);
                     this.close();
                 })
             );
