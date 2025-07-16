@@ -4,6 +4,7 @@ import { join } from "path";
 
 const EOF = "EOF";
 const ANCHOR = "¦";
+const CLIPBOARD = "$CLIPBOARD";
 export const DEL_TRIG = "❌";
 
 class ParseResult<T> {
@@ -337,7 +338,7 @@ class RuleParser {
         }
     }
 
-    parseOne(): ParseResult<Rule> {
+    async parseOne(): Promise<ParseResult<Rule>> {
         const r1 = this.parseString();
         if (!r1.isOk) { return Err(r1.error); }
         const r2 = this.parseMapArrow();
@@ -363,17 +364,27 @@ class RuleParser {
             let rightPart = r3.value;
             let arrowType = r2.value;
             if (r2.value === ArrowType.Import) {
-                // read the file to replace r3
-                const path = join(this.basePath,  r3.value);
-               
-                if (r3.value === "" || !existsSync(path) || !statSync(path).isFile()) {
-                    return Err(`File not found: "${r3.value}"`);
+                if (r3.value === "") {
+                    return Err(`Expect a text source, file or clipboard`);
                 }
-                if (this.justCheck) {
-                    rightPart = ANCHOR;
+                if (r3.value === CLIPBOARD) {
+                    if (this.justCheck) {
+                        rightPart = ANCHOR;
+                    } else {
+                        const clipboard = await navigator.clipboard.readText();
+                        rightPart = clipboard + ANCHOR;
+                    }
                 } else {
-                    const content = readFileSync(path, 'utf-8');
-                    rightPart = content + ANCHOR;
+                    const path = join(this.basePath, r3.value);
+                    if (!existsSync(path) || !statSync(path).isFile()) {
+                        return Err(`File not found: "${r3.value}"`);
+                    }
+                    if (this.justCheck) {
+                        rightPart = ANCHOR;
+                    } else {
+                        const content = readFileSync(path, 'utf-8');
+                        rightPart = content + ANCHOR;
+                    }
                 }
                 arrowType = ArrowType.Insert;
             }
@@ -391,13 +402,13 @@ class RuleParser {
         return Ok(rule);
     }
 
-    parse() {
+    async parse() {
         let line = 1;
         while (true) {
             const r = this.parseComment();
             if (!r.isOk) {
                 // this line has something, go parsing
-                const rRes = this.parseOne();
+                const rRes = await this.parseOne();
                 if (!rRes.isOk) {
                     for (const msg of rRes.error.split("\n")) {
                         this.errors.push(`line ${line}: ` + msg);
@@ -432,13 +443,16 @@ export class Rules {
     deleteTrigSet: Set<string>;
     lmax: number;
     rmax: number;
-    constructor(ruletxt: string, justCheck=false, basePath: string = "") {
-        const parser = new RuleParser(ruletxt, justCheck, basePath);
-        parser.parse();
+    constructor() {
         this.rules = [];
         this.insertTrigSet = new Set<string>();
         this.deleteTrigSet = new Set<string>();
-        this.lmax = this.rmax = 0;
+        this.lmax = this.rmax = 0; 
+    }
+
+    async parse(ruletxt: string, justCheck = false, basePath: string = "") {
+        const parser = new RuleParser(ruletxt, justCheck, basePath);
+        await parser.parse();
         this.errors = parser.errors;
         if (this.errors.length > 0) return;
         if (justCheck) return;
