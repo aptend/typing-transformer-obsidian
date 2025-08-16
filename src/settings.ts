@@ -394,7 +394,7 @@ class StringInputModal extends Modal {
 
 
 
-class ConfirmationModal extends Modal {
+export class ConfirmationModal extends Modal {
 
     constructor(app: App, prompt: string, confirmCb: (ans: boolean) => Promise<void>) {
         super(app);

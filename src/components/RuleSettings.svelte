@@ -1,7 +1,8 @@
 <script lang="ts">
   import TypingTransformer from "src/main";
-  // import RuleEditor from "./RuleEditor.svelte";
+  import RuleEditor from "./RuleEditor.svelte";
   import { Notice } from "obsidian";
+  import { ConfirmationModal } from "src/settings";
 
   let { plugin }: { plugin: TypingTransformer } = $props();
 
@@ -13,7 +14,6 @@
   const BaseProfileName = "global";
 
   // Everything related to Profiles
-  //TODO: Don't directly mutate settings 
   let activeProfile = $state(plugin.settings.activeProfile);
   let profiles: Profile[] = $state(plugin.settings.profiles);
 
@@ -35,10 +35,12 @@
     activeProfile = title;
     newProfilePrompt = false;
     newProfile = "";
+    saveSettings();
   }
 
   function selectProfile(title: string) {
     activeProfile = title;
+    saveSettings();
   }
 
   function removeProfile(title: string) {
@@ -46,7 +48,43 @@
       activeProfile = BaseProfileName;
     }
     profiles = profiles.filter(p => p.title !== title);
+    saveSettings();
   } 
+
+  // TODO: function changeActiveProfile
+  // Bind state of editor (for checking when selecting profiles)
+  let editorIsValid = $state(true);
+
+  // Function will not only update variable, but also run something to update the Rule Editor
+  async function changeActiveProfile(title: string) {
+    if (!editorIsValid) {
+      const confirmed = await new Promise<boolean>((resolve) => {new ConfirmationModal(
+        this.plugin.app,
+        "Are you sure you want to discard changes?",
+        async (ans: boolean) => resolve(ans),
+      ).open();
+    });
+
+    if (!confirmed) return;
+
+    activeProfile = title;
+  }
+
+  async function saveSettings() {
+    plugin.settings.profiles = profiles;
+    plugin.settings.activeProfile = activeProfile;
+    plugin.saveSettings().catch((e) => {
+      new Notice("Failed to save plugin settings");
+      console.error(e);
+    });
+  }
+
+  // Handle Content from Rule Editor
+  function handleValidChange(newText: string) {
+    const profile = profiles.find(p => p.title === activeProfile);
+    if (profile) profile.content = newText;
+    saveSettings();
+  }
 </script>
 
 <div class="setting-item rules-text-area">
@@ -83,6 +121,7 @@
       {#each profiles as profile (profile.title)}
         <div>
           <button
+            class="rules-profile-button clickable-icon extra-setting-button"
             class:selected={activeProfile === profile.title}
             onclick={() => selectProfile(profile.title)}
           >
@@ -90,7 +129,7 @@
           </button>
           {#if profile.title !== "global"}
             <button
-              class="close"
+              class="rules-profile-close"
               onclick={(e) => {
                 e.stopPropagation();
                 removeProfile(profile.title);
@@ -117,3 +156,5 @@
     </div>
   </div>
 </div>
+
+<RuleEditor initialText={profiles.filter(profile => profile.title == activeProfile)[0].content} checkRules={plugin.checkRules} onValidChange={handleValidChange} bind:isValid={editorIsValid}  />
