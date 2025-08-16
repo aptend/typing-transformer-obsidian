@@ -1,66 +1,86 @@
 <script lang="ts">
-    import TypingTransformer from "src/main";
-    import type { State } from "src/settings";
+    import { onMount } from 'svelte';
+    import { python } from '@codemirror/lang-python';
+    import { lineNumbers, EditorView, ViewUpdate } from '@codemirror/view';
+    import { Annotation, EditorState, Extension } from '@codemirror/state';
+    import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
+    import { config } from 'src/settings';
+    import { tags as t } from "@lezer/highlight";
 
-    type RuleEditorProps = {
-        plugin: TypingTransformer,
-        state: State;
+    interface RuleEditorProps {
+        initialText: string,
+        onChange: (text: string) => void,
     }
 
-    let props: RuleEditorProps = $props();
+    let { initialText, onChange }: RuleEditorProps = $props();
 
+    const ProfileSwitch = Annotation.define<boolean>();
+
+
+    let editorContainer: HTMLDivElement;
+    let editor: EditorView;
+
+    const obsidianTheme = EditorView.theme({
+        "&": {
+            color: config.foreground,
+            backgroundColor: config.background,
+        },
+        ".cm-content": { caretColor: config.cursor },
+        "&.cm-focused .cm-cursor": { borderLeftColor: config.cursor },
+        "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, & ::selection": { backgroundColor: config.selection },
+        ".cm-activeLine": { backgroundColor: config.activeLine },
+        ".cm-activeLineGutter": { backgroundColor: config.background },
+        ".cm-selectionMatch": { backgroundColor: config.selection },
+        ".cm-gutters": {
+            backgroundColor: config.background,
+            color: config.comment,
+            borderRight: "1px solid var(--background-modifier-border)"
+        },
+        ".cm-lineNumbers, .cm-gutterElement": { color: "inherit" },
+    });
+
+    const obsidianHighlightStyle = HighlightStyle.define([
+        { tag: [t.processingInstruction, t.string, t.inserted, t.special(t.string)], color: config.string },
+        { tag: [t.color, t.constant(t.name), t.standard(t.name)], color: config.constant },
+        { tag: t.comment, color: config.comment },
+        { tag: t.invalid, color: config.invalid },
+    ]);
+
+    const extensions: Extension[] = [
+        obsidianTheme,
+        lineNumbers(),
+        EditorView.lineWrapping,
+        python(), // it is better to write a language support for rules
+        syntaxHighlighting(obsidianHighlightStyle),
+        EditorView.updateListener.of(async (v: ViewUpdate) => {
+            if (v.docChanged) {
+                const value = v.state.doc.toString();
+                onChange(value);
+            }
+        })
+    ];
+
+  onMount(() => {
+    const state = EditorState.create({
+      doc: initialText,
+      extensions: extensions
+    });
+
+    editor = new EditorView({
+      state,
+      parent: editorContainer
+    });
+  });
 </script>
 
-<div class="setting-item rules-text-area">
-   <div class="setting-item-info">
-      <div class="setting-item-name">Rules</div>
-      <div class="setting-item-description">
-         <span>Enter conversion, selection, and deletion rules here. NOTES:</span>
-         <ol>
-            <li>Each line is one rule. Rules that come first have higher priority.</li>
-            <li>Lines starting with "#" are treated as comments and ignored. Inline comments are also allowed</li>
-            <li>The character '|' indicates where your cursor will be placed after the rule is applied.</li>
-            <li>To use special characters like '|' for conversion, you escape them with a backslash, for example: '\|' </li>
-            <li>Whatever tab you are on when the plugin settings tab quits will be the profile that is chosen</li>
-            <li>The 'global' profile will always be active</li>
-         </ol>
-      </div>
-   </div>
-   <div class="setting-item-control">
-      <div class="rules-profiles">
-         <div class="clickable-icon extra-setting-button rules-profile-button selected" accesskey="global">global</div>
-         <div class="clickable-icon extra-setting-button rules-profile-button">+</div>
-      </div>
-      <div class="rules-editor-wrapper">
-         <div class="cm-editor ͼ1 ͼ2 ͼ23">
-            <div class="cm-announced" aria-live="polite"></div>
-            <div tabindex="-1" class="cm-scroller">
-               <div class="cm-gutters cm-gutters-before" aria-hidden="true" style="min-height: 743px; position: sticky;">
-                  <div class="cm-gutter cm-lineNumbers">
-                     <!-- line numbers -->
-                  </div>
-               </div>
-               <div spellcheck="false" autocorrect="off" autocapitalize="off" writingsuggestions="false" translate="no" contenteditable="true" class="cm-content cm-lineWrapping" role="textbox" aria-multiline="true" data-language="python" style="tab-size: 4;">
-                  <!-- contents -->
-               </div>
-            </div>
-         </div>
-      </div>
-      <div class="rules-footer">
-         <div class="rules-editor-validity">
-            <div class="clickable-icon extra-setting-button rules-editor-validity-indicator"></div>
-            <div class="rules-editor-validity-text setting-item-description rules-editor-validity-txt"></div>
-         </div>
-         <div class="rules-editor-buttons">
-            <button aria-label="Reset to default rules">
-               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-repeat">
-                  <path d="m17 2 4 4-4 4"></path>
-                  <path d="M3 11v-1a4 4 0 0 1 4-4h14"></path>
-                  <path d="m7 22-4-4 4-4"></path>
-                  <path d="M21 13v1a4 4 0 0 1-4 4H3"></path>
-               </svg>
-            </button>
-         </div>
-      </div>
-   </div>
-</div>
+<div bind:this={editorContainer} class="rules-editor-wrapper"></div>
+
+<style>
+  .rules-editor-wrapper {
+    height: 20em;
+    resize: vertical;
+    overflow: auto;
+    font-size: var(--font-inputs);
+    border: 1px solid var(--background-modifier-border);
+  }
+</style>
