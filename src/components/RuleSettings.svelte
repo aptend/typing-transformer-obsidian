@@ -1,6 +1,6 @@
 <script lang="ts">
   import TypingTransformer from "src/main";
-  import RuleEditor from "./RuleEditor.svelte";
+  // import RuleEditor from "./RuleEditor.svelte";
   import { Notice } from "obsidian";
 
   let { plugin }: { plugin: TypingTransformer } = $props();
@@ -10,6 +10,9 @@
       content: string;
   }
 
+  const BaseProfileName = "global";
+
+  // Everything related to Profiles
   //TODO: Don't directly mutate settings 
   let activeProfile = $state(plugin.settings.activeProfile);
   let profiles: Profile[] = $state(plugin.settings.profiles);
@@ -31,6 +34,7 @@
     profiles.push({ title: title, content: "" });
     activeProfile = title;
     newProfilePrompt = false;
+    newProfile = "";
   }
 
   function selectProfile(title: string) {
@@ -38,7 +42,10 @@
   }
 
   function removeProfile(title: string) {
-    
+    if (activeProfile == title) {
+      activeProfile = BaseProfileName;
+    }
+    profiles = profiles.filter(p => p.title !== title);
   } 
 </script>
 
