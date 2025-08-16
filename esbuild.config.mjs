@@ -69,7 +69,7 @@ let copyFile = {
 	},
 }
 
-esbuild.build({
+const options = {
 	banner: {
 		js: banner,
 	},
@@ -97,11 +97,25 @@ esbuild.build({
 		...builtins
 	],
 	format: 'cjs',
-	watch: !prod,
 	target: 'es2016',
 	logLevel: "info",
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
 	outfile: path.join(pluginDir, 'main.js'),
-}).catch(() => process.exit(1))
+}
+
+try {
+	if (prod) {
+	// production build
+	await esbuild.build(options);
+	} else {
+	// development build with watch
+	const ctx = await esbuild.context(options);
+	await ctx.watch();
+	console.log("👀 Watching for changes...");
+	}
+} catch (err) {
+	console.error(err);
+	process.exit(1);
+}
 
