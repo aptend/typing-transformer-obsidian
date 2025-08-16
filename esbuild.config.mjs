@@ -3,6 +3,7 @@ import process from "process";
 import builtins from 'builtin-modules'
 import fs from "fs";
 import path from "path";
+import sveltePlugin from 'esbuild-svelte';
 
 const banner =
 `/*
@@ -73,7 +74,10 @@ const options = {
 	banner: {
 		js: banner,
 	},
-	plugins: [wasmPlugin, copyFile],
+	plugins: [
+		wasmPlugin, 
+		copyFile, 
+		sveltePlugin()],
 	entryPoints: ['src/main.ts'],
 	bundle: true,
 	external: [

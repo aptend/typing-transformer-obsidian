@@ -7,6 +7,8 @@ import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { python } from "@codemirror/lang-python";
 import { tags as t } from "@lezer/highlight";
 import { log } from "./utils";
+import { mount } from "svelte";
+import RuleEditor from "./components/RuleEditor.svelte";
 
 export const config = {
     name: "obsidian",
@@ -151,6 +153,9 @@ export class SettingTab extends PluginSettingTab {
             );
 
         this.ruleEditor = createRuleEditorInContainer(containerEl, plugin, this.editorState);
+        
+
+        mount(RuleEditor, { target: containerEl });
     }
 }
 
