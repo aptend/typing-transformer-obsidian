@@ -6,13 +6,14 @@
     import { syntaxHighlighting, HighlightStyle } from '@codemirror/language';
     import { config } from 'src/settings';
     import { tags as t } from "@lezer/highlight";
+    import { log } from 'src/utils';
 
     interface RuleEditorProps {
-        initialText: string,
-        onChange: (text: string) => void,
+        content: string;
+        onChange: (text: string) => void;
     }
 
-    let { initialText, onChange }: RuleEditorProps = $props();
+    let { content = $bindable(), onChange }: RuleEditorProps = $props();
 
     const ProfileSwitch = Annotation.define<boolean>();
 
@@ -54,15 +55,15 @@
         syntaxHighlighting(obsidianHighlightStyle),
         EditorView.updateListener.of(async (v: ViewUpdate) => {
             if (v.docChanged) {
-                const value = v.state.doc.toString();
-                onChange(value);
+                content = v.state.doc.toString();
+                onChange(content)
             }
         })
     ];
 
   onMount(() => {
     const state = EditorState.create({
-      doc: initialText,
+      doc: content,
       extensions: extensions
     });
 
@@ -70,7 +71,18 @@
       state,
       parent: editorContainer
     });
+
+    log(content)
+
+    log("Editor launched", editor)
   });
+
+  $effect(() => {
+    if (editor && content !== editor.state.doc.toString()) {
+    editor.dispatch({
+      changes: { from: 0, to: editor.state.doc.length, insert: content }
+    });
+  }})
 </script>
 
 <div bind:this={editorContainer} class="rules-editor-wrapper"></div>

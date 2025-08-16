@@ -64,6 +64,12 @@ export interface TypingTransformerSettings {
     activeProfile: string,
 }
 
+interface Profile {
+        title: string;
+        content: string;
+    }
+
+
 export const DEFAULT_SETTINGS: TypingTransformerSettings = {
     debug: false,
     convertRules: DEFAULT_RULES,
@@ -149,7 +155,7 @@ export class SettingTab extends PluginSettingTab {
 
         this.ruleEditor = createRuleEditorInContainer(containerEl, plugin, this.editorState);
         
-        mount(RuleSettings, { target: containerEl, props: { plugin: plugin, pluginState: this.editorState} });
+        mount(RuleSettings, { target: containerEl, props: { plugin: plugin } });
     }
 }
 

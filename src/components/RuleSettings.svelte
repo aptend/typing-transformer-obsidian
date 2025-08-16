@@ -1,28 +1,30 @@
 <script lang="ts">
 
-   //Define props
-   import TypingTransformer from "src/main";
-   import RuleEditor from "./RuleEditor.svelte";
+    //Define props
+    import TypingTransformer from "src/main";
+    import RuleEditor from "./RuleEditor.svelte";
 
-    interface ProfileState {
-        selectedProfileName: string,
-        selectedProfileEl: HTMLElement,
-        baseProfileEl: HTMLElement,
-        profilesMap: Map<string, string>,
-        editedProfile: Set<string>
+
+    let { plugin }: { plugin: TypingTransformer } = $props();
+
+    const BaseProfileName = "global";
+
+    // State Variables
+    let activeProfile = $state(plugin.settings.activeProfile);
+    let profiles: Profile[] = $state(plugin.settings.profiles);
+
+
+    // Process Rule Editor Text
+    let activeProfileContent = $derived(profiles.filter(profile => profile.title == activeProfile)[0].content);
+    // svelte-ignore state_referenced_locally
+    let ruleEditorText = $state(activeProfileContent);
+
+    function saveProfileContent() {
+        
     }
-
-    type RuleSettingsProps = {
-        plugin: TypingTransformer,
-        pluginState: ProfileState;
-    }
-
-    let { plugin, pluginState }: RuleSettingsProps = $props();
-
-    let { selectedProfileName, selectedProfileEl, baseProfileEl, profilesMap, editedProfile } = pluginState;
-
+    
     // Check Validity
-    import { Modal, Notice, setIcon } from "obsidian";
+    import { setIcon } from "obsidian";
 
     let validityText = $state("");
     let validityIconEl: HTMLElement;
@@ -45,40 +47,46 @@
     }
 
     //Profile Actions
-    import StringInputModal from "./StringInputModal.svelte";
-  import { mount } from "svelte";
+    import { Notice } from "obsidian";
+    import { log } from "src/utils";
+    import { EditorView } from "@codemirror/view";
 
     interface Profile {
         title: string;
         content: string;
     }
 
-    function selectProfile(name: string) {
-        selectedProfileName = name;
+    let newProfilePromptDisplay = $state(false);
+    let newProfileName = $state("");
+
+    function handleAddProfile(profileTitle: string): void {
+        if (profiles.length > 5) {
+            new Notice("You can only have 6 profiles at most.");
+            return;
+        }
+
+        if (profiles.some(p => p.title === profileTitle)) {
+            new Notice("Profile already exists!", 5000)
+        }
+
+        profiles.push({ title: profileTitle, content: "" });
+        activeProfile = profileTitle;
+        newProfilePromptDisplay = false;
     }
 
-    function removeProfile(name: string) {
-        if (selectedProfileName === name) {
-            selectedProfileName = "global";
-        }
-        profilesMap.delete(name);
+    function selectProfile(profileTitle: string): void {
+        activeProfile = profileTitle;
+        ruleEditorText = activeProfileContent;
+        log(activeProfile)
+        log(ruleEditorText)
     }
-
-    let showNewProfileModal = $state(false);
-    let newProfileModalError = $state("");
-
-    function handleProfileSubmit(name: string): boolean {
-        if (profilesMap.has(name)) {
-            newProfileModalError = "Profile already exists!";
-            return false;
-        }
-
-        profilesMap.set(name, "");
-        selectedProfileName = name;
-        showNewProfileModal = false;
-        return true;
-        }
     
+    function removeProfile(profileTitle: string): void {
+        if (activeProfile == profileTitle) {
+            activeProfile = BaseProfileName;
+        }
+        profiles = profiles.filter(p => p.title !== profileTitle);
+    }
 
 </script>
 
@@ -99,29 +107,41 @@
    </div>
    <div class="setting-item-control">
       <div class="rules-profiles">
-            {#each Array.from(profilesMap.keys()) as name (name)}
+            {#each profiles as profile (profile.title)}
                 <div>
-
-                <button
-                    class:selected={selectedProfileName === name}
-                    onclick={() => selectProfile(name)}
-                >
-                {name}
-                </button>
-                {#if name !== "global"}
-                    <button class="close" onclick={(e) => { 
-                        e.stopPropagation(); 
-                        removeProfile(name);
-                    }}>×</button>
-                {/if}
-                <div>
+                    <button
+                        class:selected={activeProfile === profile.title}
+                        onclick={() => selectProfile(profile.title)}
+                    >
+                    {profile.title}
+                    </button>
+                    {#if profile.title !== "global"}
+                        <button class="close" onclick={(e) => { 
+                            e.stopPropagation(); 
+                            removeProfile(profile.title);
+                        }}>×</button>
+                    {/if}
+                    </div>
             {/each}
-
-            <button onclick={addProfile}>+</button>
+            
+            {#if newProfilePromptDisplay} 
+                <input 
+                    type="text"
+                    bind:value={newProfileName}
+                    placeholder="Enter profile name"
+                    onkeydown={(e) => {
+                        if (e.key === "Enter") handleAddProfile(newProfileName);
+                    }}
+                />
+                <button onclick={() => handleAddProfile(newProfileName)}>✔️</button>
+                <button onclick={() => newProfilePromptDisplay = false}>❌</button>
+            {:else}
+                <button onclick={() => newProfilePromptDisplay = true}>+</button>
+            {/if}  
         </div>
     </div>
 
-    <RuleEditor initialText={plugin.settings.convertRules} onChange={validateRules} />
+    <RuleEditor bind:content={ruleEditorText} onChange={validateRules} />
 
     <div class="rules-footer">
         <div class="rules-editor-validity">
