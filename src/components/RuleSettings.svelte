@@ -19,8 +19,10 @@
 
     let { plugin, pluginState }: RuleSettingsProps = $props();
 
+    let { selectedProfileName, selectedProfileEl, baseProfileEl, profilesMap, editedProfile } = pluginState;
+
     // Check Validity
-    import { setIcon } from "obsidian";
+    import { Modal, Notice, setIcon } from "obsidian";
 
     let validityText = $state("");
     let validityIconEl: HTMLElement;
@@ -43,10 +45,40 @@
     }
 
     //Profile Actions
+    import StringInputModal from "./StringInputModal.svelte";
+  import { mount } from "svelte";
+
     interface Profile {
         title: string;
         content: string;
     }
+
+    function selectProfile(name: string) {
+        selectedProfileName = name;
+    }
+
+    function removeProfile(name: string) {
+        if (selectedProfileName === name) {
+            selectedProfileName = "global";
+        }
+        profilesMap.delete(name);
+    }
+
+    let showNewProfileModal = $state(false);
+    let newProfileModalError = $state("");
+
+    function handleProfileSubmit(name: string): boolean {
+        if (profilesMap.has(name)) {
+            newProfileModalError = "Profile already exists!";
+            return false;
+        }
+
+        profilesMap.set(name, "");
+        selectedProfileName = name;
+        showNewProfileModal = false;
+        return true;
+        }
+    
 
 </script>
 
@@ -67,25 +99,44 @@
    </div>
    <div class="setting-item-control">
       <div class="rules-profiles">
-         <div class="clickable-icon extra-setting-button rules-profile-button selected" accesskey="global">global</div>
-         <div class="clickable-icon extra-setting-button rules-profile-button">+</div>
-      </div>
-      <RuleEditor initialText={plugin.settings.convertRules} onChange={validateRules} />
-      <div class="rules-footer">
-         <div class="rules-editor-validity">
+            {#each Array.from(profilesMap.keys()) as name (name)}
+                <div>
+
+                <button
+                    class:selected={selectedProfileName === name}
+                    onclick={() => selectProfile(name)}
+                >
+                {name}
+                </button>
+                {#if name !== "global"}
+                    <button class="close" onclick={(e) => { 
+                        e.stopPropagation(); 
+                        removeProfile(name);
+                    }}>×</button>
+                {/if}
+                <div>
+            {/each}
+
+            <button onclick={addProfile}>+</button>
+        </div>
+    </div>
+
+    <RuleEditor initialText={plugin.settings.convertRules} onChange={validateRules} />
+
+    <div class="rules-footer">
+        <div class="rules-editor-validity">
             <div class="rules-editor-validity-indicator {isValid ? "valid" : "invalid" }" bind:this={validityIconEl}></div>
-            <span>{validityText}</span>
-         </div>
-         <div class="rules-editor-buttons">
+            <span class="rules-editor-validity-txt" >{validityText}</span>
+        </div>
+        <div class="rules-editor-buttons">
             <button aria-label="Reset to default rules">
-               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-repeat">
-                  <path d="m17 2 4 4-4 4"></path>
-                  <path d="M3 11v-1a4 4 0 0 1 4-4h14"></path>
-                  <path d="m7 22-4-4 4-4"></path>
-                  <path d="M21 13v1a4 4 0 0 1-4 4H3"></path>
-               </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-repeat">
+                    <path d="m17 2 4 4-4 4"></path>
+                    <path d="M3 11v-1a4 4 0 0 1 4-4h14"></path>
+                    <path d="m7 22-4-4 4-4"></path>
+                    <path d="M21 13v1a4 4 0 0 1-4 4H3"></path>
+                </svg>
             </button>
-         </div>
-      </div>
-   </div>
+        </div>
+    </div>
 </div>
