@@ -154,12 +154,11 @@ export class SettingTab extends PluginSettingTab {
 
         this.ruleEditor = createRuleEditorInContainer(containerEl, plugin, this.editorState);
         
-
-        mount(RuleEditor, { target: containerEl });
+        mount(RuleEditor, { target: containerEl, props: { plugin: plugin, state: this.editorState} });
     }
 }
 
-interface State {
+export interface State {
     selectedProfileName: string,
     selectedProfileEl: HTMLElement,
     baseProfileEl: HTMLElement,
