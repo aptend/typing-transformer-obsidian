@@ -89,38 +89,15 @@ export class SettingTab extends PluginSettingTab {
     constructor(app: App, plugin: TypingTransformer) {
         super(app, plugin);
         this.plugin = plugin;
-        this.editorState = {
-            selectedProfileName: BaseProfileName,
-            selectedProfileEl: undefined,
-            baseProfileEl: undefined,
-            profilesMap: new Map<string, string>(plugin.settings.profiles.map((p) => {
-                return [p.title, p.content];
-            })),
-            editedProfile: new Set<string>()
-        };
     }
 
     async hide() {
-        this.ruleEditor?.destroy();
-        const { selectedProfileName: target, profilesMap: map, editedProfile: set } = this.editorState;
-        if (set.size > 0) {
-            const newProfiles: Profile[] = [];
-            for (const [key, value] of map) {
-                newProfiles.push({ title: key, content: value });
-            }
-            this.plugin.settings.profiles = newProfiles;
-            log("setting: save profiles");
-            await this.plugin.saveSettings();
-        }
+        log("setting: exiting & saving");
+        await this.plugin.saveSettings();
+
         const activeProfile = this.plugin.settings.activeProfile;
-        if (target != activeProfile ||
-            set.has(BaseProfileName) ||
-            set.has(activeProfile)) {
-            const newRule = target === BaseProfileName ?
-                map.get(BaseProfileName) :
-                map.get(BaseProfileName) + '\n' + map.get(target);
-            await this.plugin.configureProfile(target, newRule);
-        }
+        const ruleString = this.plugin.settings.profiles.filter(profile => profile.title === BaseProfileName || profile.title === activeProfile).map(profile => profile.content).join("\n");
+        await this.plugin.configureProfile(activeProfile, ruleString);
     }
 
     display(): void {
@@ -152,8 +129,6 @@ export class SettingTab extends PluginSettingTab {
                 .setValue(plugin.settings.zoneIndicatorOn)
                 .onChange(async (_val) => await plugin.toggleIndicator())
             );
-
-        this.ruleEditor = createRuleEditorInContainer(containerEl, plugin, this.editorState);
         
         mount(RuleSettings, { target: containerEl, props: { plugin: plugin } });
     }
