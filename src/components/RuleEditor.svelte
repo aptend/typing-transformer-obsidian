@@ -76,11 +76,13 @@
     }
   }
 
-  function handleEditorReset() {
+  export function handleEditorReset(newText: string) {
+    editorText = newText;
     isValid = true;
     validityText = "";
+
     editor.dispatch({
-      changes: { from: 0, to: editor.state.doc.length, insert: DEFAULT_RULES }
+      changes: { from: 0, to: editor.state.doc.length, insert: editorText }
     });
   }
 
@@ -122,7 +124,7 @@
     <span class="rules-editor-validity-txt" >{validityText}</span>
   </div>
   <div class="rules-editor-buttons">
-    <button aria-label="Reset to default rules" onclick={handleEditorReset}>
+    <button aria-label="Reset to default rules" onclick={() => handleEditorReset(DEFAULT_RULES)}>
       <ObsidianIcon icon="repeat" className="" />
     </button>
   </div>

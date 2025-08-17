@@ -29,6 +29,7 @@
 
     if (profiles.some(p => p.title === title)) {
         new Notice("Profile already exists!", 5000)
+        return;
     }
 
     profiles.push({ title: title, content: "" });
@@ -39,7 +40,8 @@
   }
 
   function selectProfile(title: string) {
-    activeProfile = title;
+    console.log("selected profile:", title)
+    changeActiveProfile(title);
     saveSettings();
   }
 
@@ -55,19 +57,30 @@
   // Bind state of editor (for checking when selecting profiles)
   let editorIsValid = $state(true);
 
+  // Bind editor element, so we can access the exported function (to change text within)
+  let ruleEditorRef: RuleEditor;
+
   // Function will not only update variable, but also run something to update the Rule Editor
   async function changeActiveProfile(title: string) {
     if (!editorIsValid) {
-      const confirmed = await new Promise<boolean>((resolve) => {new ConfirmationModal(
-        this.plugin.app,
+      const confirmed = await new Promise<boolean>((resolve) => {
+        new ConfirmationModal(
+        plugin.app,
         "Are you sure you want to discard changes?",
         async (ans: boolean) => resolve(ans),
-      ).open();
-    });
+        ).open();
+      });
 
-    if (!confirmed) return;
+      if (!confirmed) return;
+    }
 
     activeProfile = title;
+    editorIsValid = true;
+
+    const newProfile = profiles.find(p => p.title === activeProfile);
+    if (newProfile) {
+      ruleEditorRef.handleEditorReset(newProfile.content);
+    }
   }
 
   async function saveSettings() {
@@ -157,4 +170,4 @@
   </div>
 </div>
 
-<RuleEditor initialText={profiles.filter(profile => profile.title == activeProfile)[0].content} checkRules={plugin.checkRules} onValidChange={handleValidChange} bind:isValid={editorIsValid}  />
+<RuleEditor bind:this={ruleEditorRef} initialText={profiles.filter(profile => profile.title == activeProfile)[0].content} checkRules={plugin.checkRules} onValidChange={handleValidChange} bind:isValid={editorIsValid}  />
