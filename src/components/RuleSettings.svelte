@@ -132,12 +132,8 @@
   <div class="setting-item-control">
     <div class="rules-profiles">
       {#each profiles as profile (profile.title)}
-        <div>
-          <button
-            class="rules-profile-button clickable-icon extra-setting-button"
-            class:selected={activeProfile === profile.title}
-            onclick={() => selectProfile(profile.title)}
-          >
+        <div class="rules-profile-container clickable-icon extra-setting-button" class:selected={activeProfile === profile.title}>
+          <button onclick={() => selectProfile(profile.title)}>
             {profile.title}
           </button>
           {#if profile.title !== "global"}
@@ -151,21 +147,23 @@
           {/if}
         </div>
       {/each}
-
-      {#if newProfilePrompt}
-        <input
-          type="text"
-          bind:value={newProfile}
-          placeholder="Enter profile name"
-          onkeydown={(e) => {
-            if (e.key === "Enter") addProfile(newProfile);
-          }}
-        />
-        <button onclick={() => addProfile(newProfile)}>✔️</button>
-        <button onclick={() => (newProfilePrompt = false)}>❌</button>
-      {:else}
-        <button onclick={() => (newProfilePrompt = true)}>+</button>
-      {/if}
+      
+      <div class="rules-profile-container clickable-icon extra-setting-button">
+        {#if newProfilePrompt}
+          <input
+            type="text"
+            bind:value={newProfile}
+            placeholder="Enter profile name"
+            onkeydown={(e) => {
+              if (e.key === "Enter") addProfile(newProfile);
+            }}
+          />
+          <button onclick={() => addProfile(newProfile)}>✔️</button>
+          <button onclick={() => (newProfilePrompt = false)}>❌</button>
+        {:else}
+          <button onclick={() => (newProfilePrompt = true)}>+</button>
+        {/if}
+      </div>
     </div>
   </div>
 </div>

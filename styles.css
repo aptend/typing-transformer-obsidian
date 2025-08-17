@@ -38,16 +38,20 @@
     
 }
 
-.rules-profile-button {
+.rules-profile-container {
     display: flex;
     height: 40px;
     min-width: 20px;
     align-items: center;
     padding: 0px 10px 12px 10px;
-    
+    background-color: var(--interactive-normal);
 }
 
-.rules-profile-button svg {
+.rules-profile-container:hover {
+    background-color: var(--interactive-normal);
+}
+
+.rules-profile-container svg {
     width: 12px !important;
     height: 12px !important;
 }
@@ -57,13 +61,17 @@
     margin-right: 0px;
 }
 
-.rules-profile-button.selected {
+.rules-profile-container.selected {
     background: var(--background-primary);
     color: var(--text-on-accent); 
 }
 
-.rules-profile-button.clickable-icon {
-    margin: 0 5px;
+.rules-profile-container button {
+    background-color: transparent;
+}
+
+.rules-profile-container button:hover {
+    background-color: transparent !important;
 }
 
 .rules-footer {
