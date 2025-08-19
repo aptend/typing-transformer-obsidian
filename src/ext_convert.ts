@@ -367,12 +367,15 @@ class RuleParser {
                 if (r3.value === "") {
                     return Err(`Expect a text source, file or clipboard`);
                 }
-                if (r3.value === CLIPBOARD) {
+                if (r3.value.includes(CLIPBOARD)) {
                     if (this.justCheck) {
                         rightPart = ANCHOR;
                     } else {
                         const clipboard = await navigator.clipboard.readText();
-                        rightPart = clipboard + ANCHOR;
+                        rightPart = rightPart.replace(CLIPBOARD, clipboard);
+                        if (!rightPart.includes(ANCHOR)) {
+                            rightPart += ANCHOR;
+                        }
                     }
                 } else {
                     const path = join(this.basePath, r3.value);
