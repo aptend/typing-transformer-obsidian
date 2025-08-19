@@ -59,7 +59,7 @@ export default class TypingTransformer extends Plugin {
 		await this.loadSettings();
 		initLog(this.settings);
 		// make wasm ready
-		await init(wasmbin);
+		await init({module_or_path: wasmbin});
 		this.specialSections = [];
 		this.activeExts = [];
 		this.availablExts = [
