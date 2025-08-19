@@ -74,9 +74,78 @@ class Rule {
 }
 
 class SideRule {
-    constructor(readonly trig: string, readonly left: string, readonly right: string) { }
-    get isValid(): boolean {
+    readonly left: string;        // left part after removing ANCHOR marker
+    readonly right: string;       // right part after removing ANCHOR marker
+    private readonly cursorOffset: number;  // cursor offset relative to the start of final text
+    private readonly cursorInLeft: boolean; // whether cursor is in left part
+    private readonly anchorValid: boolean;
+
+    constructor(readonly trig: string, left: string, right: string) {
+        // validate that there is at most one cursor marker
+        const leftArray = Array.from(left);
+        const rightArray = Array.from(right);
+        const leftAnchorPos = findOnlyAnchor(leftArray);
+        const rightAnchorPos = findOnlyAnchor(rightArray);
+        
+        this.anchorValid = (leftAnchorPos == -1 && rightAnchorPos == -1) 
+            || (leftAnchorPos >= 0 && rightAnchorPos == -1) 
+            || (leftAnchorPos == -1 && rightAnchorPos >= 0);
+
+        // remove ANCHOR marker and store clean text
+        this.left = left.replace(ANCHOR, '');
+        this.right = right.replace(ANCHOR, '');
+        
+        // calculate cursor offset and position information
+        if (leftAnchorPos >= 0) {
+            // cursor is in left part: offset is the position of | in original left
+            this.cursorOffset = leftAnchorPos;
+            this.cursorInLeft = true;
+        } else if (rightAnchorPos >= 0) {
+            // cursor is in right part: offset is left length (after removing |) + position of | in original right
+            this.cursorOffset = this.left.length + rightAnchorPos;
+            this.cursorInLeft = false;
+        } else {
+            // no cursor marker, default to end of right part
+            this.cursorOffset = this.left.length + this.right.length;
+            this.cursorInLeft = false;
+        }
+    }
+
+    get isAnchorValid(): boolean {
+        return this.anchorValid;
+    }
+    
+    get isTrigValid(): boolean {
         return this.trig.length === 1;
+    }
+
+    /**
+     * Calculate cursor position after applying SideRule
+     * @param basePos base position (usually fromB)
+     * @param replacedLength length of the replaced text
+     * @returns final cursor position
+     * 
+     * Examples:
+     * - Rule: 'l' -> '[' + '][|]', selected text "hello" (length 5)
+     *   cursor in right part, final text: "[hello][", cursor position = basePos + 1 + 5 + 2 = basePos + 8
+     * 
+     * - Rule: 'q' -> 'left|Text' + 'right', selected text "abc" (length 3)
+     *   cursor in left part, final text: "leftTextabcright", cursor position = basePos + 4
+     * 
+     * - Rule: 'w' -> '|prefix' + 'suffix', selected text "xyz" (length 3)
+     *   cursor in left part, final text: "prefixxyzsuffix", cursor position = basePos + 0 = basePos
+     * 
+     * - Rule: 'r' -> 'left' + 'right', selected text "test" (length 4)
+     *   no cursor marker, default to end, final text: "lefttestright", cursor position = basePos + 4 + 4 + 5 = basePos + 13
+     */
+    calculateCursorPos(basePos: number, replacedLength: number): number {
+        if (this.cursorInLeft) {
+            // cursor is in left part, no need to consider replaced text length
+            return basePos + this.cursorOffset;
+        } else {
+            // cursor is in right part or at end, need to add replaced text length
+            return basePos + this.cursorOffset + replacedLength;
+        }
     }
 }
 
@@ -214,7 +283,7 @@ class RuleParser {
     input: string[];
     idx: number;
     convRules: ConvRule[];
-    sideRules: Map<string, { l: string, r: string }>;
+    sideRules: Map<string, SideRule>;
     errors: string[];
     justCheck: boolean;
     basePath: string;
@@ -354,8 +423,11 @@ class RuleParser {
             const rightInsert = this.parseString();
             if (!rightInsert.isOk) { return Err(rightInsert.error); }
             const sideRule = new SideRule(r1.value, r3.value, rightInsert.value);
-            if (!sideRule.isValid) {
+            if (!sideRule.isTrigValid) {
                 return Err("Expected one char, but found multiple. Note: the selection rule trigger char can only be a single character");
+            }
+            if (!sideRule.isAnchorValid) {
+                return Err("Expected at most one | on left or right side");
             }
             rule.type = RuleType.SideRule;
             rule.side = sideRule;
@@ -420,7 +492,7 @@ class RuleParser {
                     this.convRules.push(rRes.value.conv);
                 } else {
                     const s = rRes.value.side;
-                    this.sideRules.set(s.trig, { l: s.left, r: s.right });
+                    this.sideRules.set(s.trig, s);
                 }
             }
 
@@ -438,7 +510,7 @@ class RuleParser {
 
 export class Rules {
     // fetch side insert rules directly from this map
-    sideInsertMap: Map<string, { l: string, r: string }>;
+    sideInsertMap: Map<string, SideRule>;
     rules: ConvRule[];
     index: TrieNode;
     errors: string[];

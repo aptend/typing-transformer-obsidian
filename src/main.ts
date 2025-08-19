@@ -316,9 +316,18 @@ export default class TypingTransformer extends Plugin {
 				shouldHijack = false;
 				return;
 			}
-			const insert = this.rules.sideInsertMap.get(char);
+			const rule = this.rules.sideInsertMap.get(char);
 			const replaced = update.startState.sliceDoc(fromA, toA);
-			changes.push({ changes: { from: fromB, to: toB, insert: insert.l + replaced + insert.r }, annotations: ProgramTxn.of(true) });
+			
+			const insertText = rule.left + replaced + rule.right;
+			
+			const cursorPos = rule.calculateCursorPos(fromB, replaced.length);
+			
+			changes.push({ 
+				changes: { from: fromB, to: toB, insert: insertText }, 
+				annotations: ProgramTxn.of(true),
+				selection: { anchor: cursorPos, head: cursorPos }
+			});
 		});
 
 		if (shouldHijack) { update.view.dispatch(...changes); }
