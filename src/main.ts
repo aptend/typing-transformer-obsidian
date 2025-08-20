@@ -251,10 +251,10 @@ export default class TypingTransformer extends Plugin {
 		}
 	};
 
-	convertFilter = (update: ViewUpdate) => {
+	convertFilter = async (update: ViewUpdate) => {
 		if (!update.docChanged || update.transactions.some(tr => ignoreThisTr(tr))) { return; }
 		let shouldHijack = true; // Hijack when some rules match all changes
-		const changes: TransactionSpec[] = [];
+		const changePromises: Promise<TransactionSpec | null>[] = [];
 		const { insertTrigSet, deleteTrigSet, lmax, rmax } = this.rules;
 		update.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
 			if (!shouldHijack) { return; }
@@ -290,19 +290,29 @@ export default class TypingTransformer extends Plugin {
 				insertPosFromInputTextHead = fromB;
 			}
 			const input = update.startState.sliceDoc(leftIdx, fromB + rmax);
-			const rule = this.rules.match(input, trigger, insertPosFromInputTextHead);
-			if (rule != null) {
-				// TODO: record meta info of a rule
-				log("hit covert rule: %s", rule.left.join(""));
-				const change = rule.mapToChanges(fromB, trigger === DEL_TRIG);
-				change.annotations = ProgramTxn.of(true);
-				changes.push(change);
-			} else {
-				shouldHijack = false;
-			}
+			const promsise = this.rules
+				.match(input, trigger, insertPosFromInputTextHead)
+				.then(rule => {
+				if (rule != null) {
+					// TODO: record meta info of a rule
+					log("hit covert rule: %s", rule.left.join(""));
+					const change = rule.mapToChanges(fromB, trigger === DEL_TRIG);
+					change.annotations = ProgramTxn.of(true);
+					log("change: ", change);
+					return change;
+				} else {
+					return null;
+				}
+			});
+			changePromises.push(promsise);
 		});
 
-		if (shouldHijack) { update.view.dispatch(...changes); }
+		const results = await Promise.all(changePromises);
+		const changes = results.filter(result => result != null);
+
+		if (results.length === changes.length && changes.length > 0) {
+			update.view.dispatch(...changes);
+		}
 		return;
 	};
 
