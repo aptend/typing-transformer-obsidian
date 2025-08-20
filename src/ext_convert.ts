@@ -163,7 +163,11 @@ class ConvRule {
     lBefore3AnchorLen: number; // used only in Del rule. nonsense for insert rule
     lAfterAnchorLen: number;
     rBeforeAnchorLen: number;
-    constructor(left: string, right: string, readonly isForDelete: boolean = false) {
+    constructor(
+        left: string, right: string, 
+        readonly isForDelete: boolean = false, 
+        readonly isInitClipboard: boolean = false,
+    ) {
         // Actually, a delete rule is treated like a spcial insert rule.
         // the trigger char is DEL_TRIG, which can be issued by program
         // e.g. '(|)' -x '|' will be translated into '(❌|)' -> '|'
@@ -435,6 +439,7 @@ class RuleParser {
             const leftPart = r1.value;
             let rightPart = r3.value;
             let arrowType = r2.value;
+            let initClipboard = false;
             if (r2.value === ArrowType.Import) {
                 if (r3.value === "") {
                     return Err(`Expect a text source, file or clipboard`);
@@ -443,8 +448,7 @@ class RuleParser {
                     if (this.justCheck) {
                         rightPart = ANCHOR;
                     } else {
-                        const clipboard = await navigator.clipboard.readText();
-                        rightPart = rightPart.replace(CLIPBOARD, clipboard);
+                        initClipboard = true;
                         if (!rightPart.includes(ANCHOR)) {
                             rightPart += ANCHOR;
                         }
@@ -463,7 +467,11 @@ class RuleParser {
                 }
                 arrowType = ArrowType.Insert;
             }
-            const convRule = new ConvRule(leftPart, rightPart, arrowType === ArrowType.Delete);
+            const convRule = new ConvRule(
+                leftPart, rightPart, 
+                arrowType === ArrowType.Delete, 
+                initClipboard,
+            );
             if (!convRule.isValid) {
                 return Err(convRule.invalidReasons());
             }
@@ -548,21 +556,33 @@ export class Rules {
     }
 
     // match a convert rule
-    match(input: string, insChar: string, insPosBaseLineHead: number): ConvRule {
+    async match(input: string, insChar: string, insPosBaseLineHead: number): Promise<ConvRule> {
         const leftMatch = Array.from(input.slice(0, insPosBaseLineHead));
         leftMatch.push(insChar);
         const candidates = this.index.collectIdxsAlong(leftMatch);
         // Are you insane? If compareFn omitted, 'the elements are sorted in ascending, ASCII character order' ????????
         // I am so small in face of Lord Javascript.
         for (const idx of candidates.sort((a, b) => a - b)) {
-            if (this.rules[idx].canConvert(input, insChar, insPosBaseLineHead)) {
-                return this.rules[idx];
+            const rule = this.rules[idx];
+            if (rule.canConvert(input, insChar, insPosBaseLineHead)) {
+                if (rule.isInitClipboard) {
+                    return await newCompleteClipboardRule(rule);
+                }
+                return rule;
             }
         }
         return null;
     }
 }
 
+async function newCompleteClipboardRule(rule: ConvRule): Promise<ConvRule> {
+    const clipboard = await navigator.clipboard.readText();
+    const left = rule.left.join('');
+    let right = rule.right.join('');
+    right = right.replace(CLIPBOARD, clipboard);
+    // TODO: reinit with new clipboard content
+    return new ConvRule(left, right, rule.isForDelete);
+}
 
 function newConvRulesIndex(rules: ConvRule[]): TrieNode {
     const root = new TrieNode();
