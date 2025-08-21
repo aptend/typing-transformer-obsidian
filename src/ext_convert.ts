@@ -445,13 +445,9 @@ class RuleParser {
                     return Err(`Expect a text source, file or clipboard`);
                 }
                 if (r3.value.includes(CLIPBOARD)) {
-                    if (this.justCheck) {
-                        rightPart = ANCHOR;
-                    } else {
-                        initClipboard = true;
-                        if (!rightPart.includes(ANCHOR)) {
-                            rightPart += ANCHOR;
-                        }
+                    initClipboard = true;
+                    if (!rightPart.includes(ANCHOR)) {
+                        rightPart += ANCHOR;
                     }
                 } else {
                     const path = join(this.basePath, r3.value);
