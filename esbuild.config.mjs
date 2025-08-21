@@ -69,10 +69,8 @@ let copyFile = {
 	},
 }
 
-esbuild.build({
-	banner: {
-		js: banner,
-	},
+const commonConfig = {
+	banner: { js: banner },
 	plugins: [wasmPlugin, copyFile],
 	entryPoints: ['src/main.ts'],
 	bundle: true,
@@ -97,11 +95,26 @@ esbuild.build({
 		...builtins
 	],
 	format: 'cjs',
-	watch: !prod,
 	target: 'es2016',
 	logLevel: "info",
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
 	outfile: path.join(pluginDir, 'main.js'),
-}).catch(() => process.exit(1))
+};
+
+if (prod) {
+	esbuild.build(commonConfig).catch((reason) => {
+		console.error(reason);
+		process.exit(1);
+	});
+} else {
+	esbuild.context(commonConfig).then(context => {
+		context.watch().then(() => {
+			console.log('👀 Watch mode started');
+		});
+	}).catch((reason) => {
+		console.error(reason);
+		process.exit(1);
+	});
+}
 
