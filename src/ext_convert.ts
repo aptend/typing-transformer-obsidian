@@ -1,6 +1,5 @@
 import { TransactionSpec } from "@codemirror/state";
-import { readFileSync, existsSync, statSync } from "fs";
-import { join } from "path";
+import { DataAdapter, normalizePath } from "obsidian";
 
 const EOF = "EOF";
 const ANCHOR = "¦";
@@ -290,15 +289,16 @@ class RuleParser {
     sideRules: Map<string, SideRule>;
     errors: string[];
     justCheck: boolean;
+    fileAdapter: DataAdapter;
     basePath: string;
-    constructor(input: string, justCheck=false, basePath: string = "") {
+    constructor(input: string, fileAdapter: DataAdapter, justCheck = false) {
         this.idx = 0;
         this.input = Array.from(input);
         this.convRules = [];
         this.sideRules = new Map();
         this.errors = [];
         this.justCheck = justCheck;
-        this.basePath = basePath;
+        this.fileAdapter = fileAdapter;
     }
 
 
@@ -450,14 +450,15 @@ class RuleParser {
                         rightPart += ANCHOR;
                     }
                 } else {
-                    const path = join(this.basePath, r3.value);
-                    if (!existsSync(path) || !statSync(path).isFile()) {
+                    const path = normalizePath(r3.value);
+                    const stat = await this.fileAdapter.stat(path);
+                    if (!stat || stat.type === "folder") {
                         return Err(`File not found: "${r3.value}"`);
                     }
                     if (this.justCheck) {
                         rightPart = ANCHOR;
                     } else {
-                        const content = readFileSync(path, 'utf-8');
+                        const content = await this.fileAdapter.read(path);
                         rightPart = content + ANCHOR;
                     }
                 }
@@ -529,8 +530,8 @@ export class Rules {
         this.lmax = this.rmax = 0; 
     }
 
-    async parse(ruletxt: string, justCheck = false, basePath: string = "") {
-        const parser = new RuleParser(ruletxt, justCheck, basePath);
+    async parse(ruletxt: string, fileAdapter: DataAdapter, justCheck = false) {
+        const parser = new RuleParser(ruletxt, fileAdapter, justCheck);
         await parser.parse();
         this.errors = parser.errors;
         if (this.errors.length > 0) return;
