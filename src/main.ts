@@ -128,12 +128,12 @@ export default class TypingTransformer extends Plugin {
 
 	configureRules = async (ruleString: string) => {
 		this.rules = new Rules();
-		await this.rules.parse(ruleString, false, this.basePath);
+		await this.rules.parse(ruleString, this.app.vault.adapter, false);
 	};
 
 	checkRules = async (ruleString: string): Promise<string[]> => {
 		this.rules = new Rules();
-		await this.rules.parse(ruleString, true, this.basePath);
+		await this.rules.parse(ruleString, this.app.vault.adapter, true);
 		return this.rules.errors;
 	};
 
