@@ -4,7 +4,7 @@
     import type TypingTransformer from "./main";
     import { DEFAULT_RULES } from "./const";
     import { BaseProfileName } from "./settings";
-    import { StringInputModal, ConfirmationModal } from "./modals";
+    import { StringInputModal, promptConfirm } from "./modals";
     import { Annotation, EditorState, type Extension } from "@codemirror/state";
     import { EditorView, type ViewUpdate, lineNumbers } from "@codemirror/view";
     import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
@@ -79,16 +79,9 @@
 
     async function tryResetValidity(): Promise<boolean> {
         if (isValid === false) {
-            return new Promise((resolve) => {
-                new ConfirmationModal(
-                    plugin.app,
-                    "Are you sure you want to discard changes?",
-                    async (ans: boolean) => {
-                        if (ans) resetValidity();
-                        resolve(ans);
-                    }
-                ).open();
-            });
+            const ans = await promptConfirm(plugin.app, "Are you sure you want to discard changes?");
+            if (ans) resetValidity();
+            return ans;
         }
         resetValidity();
         return true;
@@ -154,6 +147,8 @@
     }
 
     async function resetToDefault() {
+        const ans = await promptConfirm(plugin.app, "Reset to default rules? This will overwrite the current profile.");
+        if (!ans) return;
         const extensions = buildExtensions();
         editor.setState(EditorState.create({ doc: DEFAULT_RULES, extensions }));
         await feedRules(DEFAULT_RULES);

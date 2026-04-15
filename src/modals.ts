@@ -44,6 +44,12 @@ export class StringInputModal extends Modal {
     }
 }
 
+export function promptConfirm(app: App, prompt: string): Promise<boolean> {
+    return new Promise((resolve) => {
+        new ConfirmationModal(app, prompt, async (ans) => resolve(ans)).open();
+    });
+}
+
 export class ConfirmationModal extends Modal {
     constructor(app: App, prompt: string, confirmCb: (ans: boolean) => Promise<void>) {
         super(app);
