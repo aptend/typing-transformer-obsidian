@@ -38,11 +38,12 @@
     });
 
     // ── State ────────────────────────────────────────────────────────────────
-    let selectedProfileName: string = plugin.settings.activeProfile;
+    let selectedProfileName: string = BaseProfileName;
     let profilesMap: Map<string, string> = new Map(
         plugin.settings.profiles.map(p => [p.title, p.content])
     );
     let editedProfile: Set<string> = new Set();
+    let activeProfiles: Set<string> = new Set(plugin.settings.activeProfiles);
 
     // null = unchecked, true = valid, false = invalid
     let isValid: boolean | null = null;
@@ -154,9 +155,19 @@
         await feedRules(DEFAULT_RULES);
     }
 
+    // ── Profile activation ───────────────────────────────────────────────────
+    function toggleActiveProfile(name: string) {
+        if (activeProfiles.has(name)) {
+            activeProfiles.delete(name);
+        } else {
+            activeProfiles.add(name);
+        }
+        activeProfiles = activeProfiles;
+    }
+
     // ── Expose state for SettingTab.hide() ───────────────────────────────────
     export function getState() {
-        return { selectedProfileName, profilesMap, editedProfile };
+        return { selectedProfileName, profilesMap, editedProfile, activeProfiles };
     }
 
     // ── CodeMirror setup ─────────────────────────────────────────────────────
@@ -210,6 +221,14 @@
         >
             {name}
             {#if name !== BaseProfileName}
+                <input
+                    type="checkbox"
+                    class="rules-profile-active"
+                    checked={activeProfiles.has(name)}
+                    on:change|stopPropagation={() => toggleActiveProfile(name)}
+                    on:click|stopPropagation
+                    title="Activate profile"
+                />
                 <span
                     class="rules-profile-close"
                     use:obsidianIcon={"cross"}

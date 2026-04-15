@@ -17,7 +17,7 @@ export interface TypingTransformerSettings {
     autoFormatOn: boolean,
     zoneIndicatorOn: boolean,
     profiles: Profile[],
-    activeProfile: string,
+    activeProfiles: string[],
 }
 
 export const DEFAULT_SETTINGS: TypingTransformerSettings = {
@@ -28,7 +28,7 @@ export const DEFAULT_SETTINGS: TypingTransformerSettings = {
     profiles: [
         { title: BaseProfileName, content: DEFAULT_RULES },
     ],
-    activeProfile: BaseProfileName,
+    activeProfiles: [BaseProfileName],
 };
 
 interface RulesEditorInstance {
@@ -36,6 +36,7 @@ interface RulesEditorInstance {
         selectedProfileName: string;
         profilesMap: Map<string, string>;
         editedProfile: Set<string>;
+        activeProfiles: Set<string>;
     };
     $destroy(): void;
 }
@@ -51,7 +52,7 @@ export class SettingTab extends PluginSettingTab {
 
     async hide() {
         if (!this.rulesEditor) return;
-        const { selectedProfileName: target, profilesMap: map, editedProfile: set } = this.rulesEditor.getState();
+        const { profilesMap: map, editedProfile: set, activeProfiles } = this.rulesEditor.getState();
         this.rulesEditor.$destroy();
         this.rulesEditor = null;
 
@@ -65,12 +66,20 @@ export class SettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
         }
 
-        const activeProfile = this.plugin.settings.activeProfile;
-        if (target !== activeProfile || set.has(BaseProfileName) || set.has(activeProfile)) {
-            const newRule = target === BaseProfileName
-                ? (map.get(BaseProfileName) ?? "")
-                : (map.get(BaseProfileName) ?? "") + '\n' + (map.get(target) ?? "");
-            await this.plugin.configureProfile(target, newRule);
+        const currentActiveProfiles = this.plugin.settings.activeProfiles;
+        const activeProfilesChanged =
+            activeProfiles.size !== currentActiveProfiles.length ||
+            !currentActiveProfiles.every(p => activeProfiles.has(p));
+
+        if (set.size > 0 || activeProfilesChanged) {
+            const globalContent = map.get(BaseProfileName) ?? "";
+            const otherContent = Array.from(activeProfiles)
+                .filter(p => p !== BaseProfileName)
+                .map(p => map.get(p) ?? "")
+                .filter(c => c)
+                .join('\n');
+            const newRule = otherContent ? globalContent + '\n' + otherContent : globalContent;
+            await this.plugin.configureProfiles(Array.from(activeProfiles), newRule);
         }
     }
 

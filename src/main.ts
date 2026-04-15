@@ -118,8 +118,8 @@ export default class TypingTransformer extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	configureProfile = async (title: string, ruleString: string) => {
-		this.settings.activeProfile = title;
+	configureProfiles = async (activeProfiles: string[], ruleString: string) => {
+		this.settings.activeProfiles = activeProfiles;
 		this.settings.convertRules = ruleString;
 		await this.configureRules(ruleString);
 		this.updateProfileStatus();
@@ -344,6 +344,6 @@ export default class TypingTransformer extends Plugin {
 	};
 
 	updateProfileStatus = () => {
-		this.profileStatus.setText(`Active Profile: ${this.settings.activeProfile}`);
+		this.profileStatus.setText(`Active Profiles: ${this.settings.activeProfiles.join(', ')}`);
 	};
 }
