@@ -40,6 +40,7 @@
 
 .rules-profile-button {
     display: flex;
+    gap: 4px;
     height: 40px;
     min-width: 20px;
     align-items: center;
