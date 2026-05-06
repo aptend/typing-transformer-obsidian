@@ -10,7 +10,7 @@ import { initLog, log } from './utils';
 import { Rules, DEL_TRIG } from './ext_convert';
 import { libertyZone } from './ext_libertyzone';
 import { TypingTransformerSettings, SettingTab, DEFAULT_SETTINGS } from './settings';
-import { getAllCommands } from './global_commands';
+import { generateProfileCommands, getAllCommands } from './global_commands';
 
 
 enum ExtID {
@@ -116,6 +116,9 @@ export default class TypingTransformer extends Plugin {
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+		for (const cmd of generateProfileCommands(this)) {
+				this.addCommand(cmd);
+		}
 	}
 
 	configureProfile = async (title: string, ruleString: string) => {

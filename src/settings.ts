@@ -7,6 +7,7 @@ import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { python } from "@codemirror/lang-python";
 import { tags as t } from "@lezer/highlight";
 import { log } from "./utils";
+import { profileCommandNameFromIndex } from "./global_commands";
 
 export const config = {
     name: "obsidian",
@@ -50,7 +51,7 @@ const obsidianTheme = EditorView.theme({
 });
 
 
-export const BaseProfileName = "global";
+export const BaseProfileName = "Global";
 const ProfileSwitch = Annotation.define<boolean>();
 
 interface Profile {
@@ -172,7 +173,7 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
     ol.createEl("li", { text: "The character '|' indicates where your cursor will be placed after the rule is applied."}); //note 3
     ol.createEl("li", { text: "To use special characters like '|' for conversion, you escape them with a backslash, for example: '\\|' "}); 
     ol.createEl("li", { text: "Whatever tab you are on when the plugin settings tab quits will be the profile that is chosen" });
-    ol.createEl("li", { text: "The 'global' profile will always be active" });
+    ol.createEl("li", { text: "The 'Global' profile will always be active" });
 
     const convertRulesSetting = new Setting(container)
         .setName("Rules")
@@ -289,6 +290,14 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
         if (el === state.selectedProfileEl)
             // switch to base profile
             onProfileClick(BaseProfileName, state.baseProfileEl);
+
+        // If we remove a profile, we want to remove its profile command as well.
+        let profileIndex = plugin.settings.profiles.findIndex((p) => p.title === name);
+        if (profileIndex) {
+            let commandName = profileCommandNameFromIndex(profileIndex);
+            plugin.removeCommand(commandName);
+        }
+        
         state.profilesMap.delete(name);
         state.editedProfile.add(name);
         profilesContainer.removeChild(el);
