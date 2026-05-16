@@ -60,7 +60,7 @@ export default class TypingTransformer extends Plugin {
 		await this.loadSettings();
 		initLog(this.settings);
 		// make wasm ready
-		await init({module_or_path: wasmbin});
+		await init(wasmbin instanceof Uint8Array ? wasmbin.buffer : wasmbin);
 		this.specialSections = [];
 		this.activeExts = [];
 		this.availablExts = [
@@ -267,8 +267,9 @@ export default class TypingTransformer extends Plugin {
 
 	sidesInsertFilter = (update: ViewUpdate) => {
 		if (!update.docChanged || update.transactions.some(tr => ignoreThisTr(tr))) { return; }
+		const isUserInput = update.transactions.some(tr => tr.isUserEvent('input'));
 		const specs = computeSideInsertChanges(
-			update.startState, update.changes, this.rules, ProgramTxn,
+			update.startState, update.changes, this.rules, ProgramTxn, isUserInput,
 		);
 		if (specs.length > 0) {
 			update.view.dispatch(...specs);
