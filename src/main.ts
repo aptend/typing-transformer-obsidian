@@ -1,5 +1,5 @@
 import { FileSystemAdapter, Plugin, Pos } from 'obsidian';
-import { Annotation, Extension, StateField, Transaction, TransactionSpec } from '@codemirror/state';
+import { Annotation, Extension, StateField, Transaction } from '@codemirror/state';
 import { history } from '@codemirror/commands';
 import { EditorView, ViewUpdate } from '@codemirror/view';
 
@@ -7,7 +7,8 @@ import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm';
 import init, { formatLine, getBlockRanges } from '../liberty-web/charliberty';
 import { PUNCTS } from './const';
 import { initLog, log } from './utils';
-import { Rules, DEL_TRIG } from './ext_convert';
+import { Rules } from './ext_convert';
+import { computeConvertChanges, computeSideInsertChanges } from './editor_logic';
 import { libertyZone } from './ext_libertyzone';
 import { TypingTransformerSettings, SettingTab, DEFAULT_SETTINGS } from './settings';
 import { getAllCommands } from './global_commands';
@@ -253,94 +254,25 @@ export default class TypingTransformer extends Plugin {
 
 	convertFilter = async (update: ViewUpdate) => {
 		if (!update.docChanged || update.transactions.some(tr => ignoreThisTr(tr))) { return; }
-		let shouldHijack = true; // Hijack when some rules match all changes
-		const changePromises: Promise<TransactionSpec | null>[] = [];
-		const { insertTrigSet, deleteTrigSet, lmax, rmax } = this.rules;
-		update.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
-			if (!shouldHijack) { return; }
-
-			let trigger: string;
-			if (fromA === toA && fromB + 1 === toB) { // insert one char
-				// TODO: support emoji as the trigger
-				trigger = inserted.sliceString(0);
-				if (!insertTrigSet.has(trigger)) { shouldHijack = false; }
-			} else if (fromA + 1 === toA && fromB === toB) { // delete one char
-				// TODO: support emoji as the del trigger
-				const delChar = update.startState.sliceDoc(fromA, toA);
-				if (!deleteTrigSet.has(delChar)) { shouldHijack = false; }
-				// mock inserting a special DEL_TRIG
-				trigger = DEL_TRIG;
-				// del: 578 579 578 578 -> insert: 579 579 579 580
-				fromA = toA;
-				fromB += 1;
-				toB = fromB + 1;
-			} else {
-				shouldHijack = false;
-			}
-
-			if (!shouldHijack) { return; }
-
-			// As it is true that fromA == toA == fromB == toB - 1, fromB is used to calculate later
-			// extract the doc to be replaced.
-			let leftIdx = fromB - lmax;
-			let insertPosFromInputTextHead = lmax;
-			if (leftIdx < 0) {
-				// at the very beginning of the document, we don't have enough chars required by lmax 
-				leftIdx = 0;
-				insertPosFromInputTextHead = fromB;
-			}
-			const input = update.startState.sliceDoc(leftIdx, fromB + rmax);
-			const promsise = this.rules
-				.match(input, trigger, insertPosFromInputTextHead)
-				.then(rule => {
-				if (rule != null) {
-					// TODO: record meta info of a rule
-					log("hit covert rule: %s", rule.left.join(""));
-					const change = rule.mapToChanges(fromB, trigger === DEL_TRIG);
-					change.annotations = ProgramTxn.of(true);
-					log("change: ", change);
-					return change;
-				} else {
-					return null;
-				}
-			});
-			changePromises.push(promsise);
-		});
-
-		const results = await Promise.all(changePromises);
-		const changes = results.filter(result => result != null);
-
-		if (results.length === changes.length && changes.length > 0) {
-			update.view.dispatch(...changes);
+		// NOTE: async dispatch means specs are computed against update.startState; if further
+		// transactions arrive during the await (e.g. clipboard read), positions may be stale.
+		// Known limitation – tracked for future StateEffect-based refactor.
+		const { specs, allMatched } = await computeConvertChanges(
+			update.startState, update.changes, this.rules, ProgramTxn,
+		);
+		if (allMatched) {
+			update.view.dispatch(...specs);
 		}
-		return;
 	};
 
 	sidesInsertFilter = (update: ViewUpdate) => {
 		if (!update.docChanged || update.transactions.some(tr => ignoreThisTr(tr))) { return; }
-		let shouldHijack = true;
-		const changes: TransactionSpec[] = [];
-		update.changes.iterChanges((fromA, toA, fromB, toB, inserted) => {
-			const char = inserted.sliceString(0);
-			if (!shouldHijack || fromA == toA || toB != fromB + 1 || !this.rules.sideInsertMap.has(char)) {
-				shouldHijack = false;
-				return;
-			}
-			const rule = this.rules.sideInsertMap.get(char);
-			const replaced = update.startState.sliceDoc(fromA, toA);
-			
-			const insertText = rule.left + replaced + rule.right;
-			
-			const cursorPos = rule.calculateCursorPos(fromB, replaced.length);
-			
-			changes.push({ 
-				changes: { from: fromB, to: toB, insert: insertText }, 
-				annotations: ProgramTxn.of(true),
-				selection: { anchor: cursorPos, head: cursorPos }
-			});
-		});
-
-		if (shouldHijack) { update.view.dispatch(...changes); }
+		const specs = computeSideInsertChanges(
+			update.startState, update.changes, this.rules, ProgramTxn,
+		);
+		if (specs.length > 0) {
+			update.view.dispatch(...specs);
+		}
 	};
 
 	updateProfileStatus = () => {
