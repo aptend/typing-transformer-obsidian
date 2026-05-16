@@ -3,6 +3,8 @@ import process from "process";
 import builtins from 'builtin-modules'
 import fs from "fs";
 import path from "path";
+import esbuildSvelte from "esbuild-svelte";
+import sveltePreprocess from "svelte-preprocess";
 
 const banner =
 `/*
@@ -71,7 +73,7 @@ let copyFile = {
 
 const commonConfig = {
 	banner: { js: banner },
-	plugins: [wasmPlugin, copyFile],
+	plugins: [wasmPlugin, copyFile, esbuildSvelte({ preprocess: sveltePreprocess() })],
 	entryPoints: ['src/main.ts'],
 	bundle: true,
 	external: [

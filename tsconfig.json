@@ -19,6 +19,7 @@
     "outDir": "build"
   },
   "include": [
-    "**/*.ts"
+    "**/*.ts",
+    "**/*.svelte"
   ]
 }
