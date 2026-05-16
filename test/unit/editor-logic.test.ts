@@ -490,6 +490,60 @@ describe('shouldHijack edge cases', () => {
   });
 });
 
+// ─── Issue #124 regression ───────────────────────────────────────────────────
+//
+// When Obsidian re-opens a note that starts with a fenced code block (```),
+// its editor fires a structural normalisation change that replaces the 3-char
+// opening fence ``` with a single ` in one transaction:
+//   fromA=0, toA=3, fromB=0, toB=1, inserted="`"
+// This is identical to a user selection-replace at the ChangeSet level.
+//
+// Fix: main.ts guards with
+//   if (!update.transactions.some(tr => tr.isUserEvent('input'))) { return; }
+// before calling computeSideInsertChanges, so structural changes never reach
+// the function. The function itself has no knowledge of userEvent — the guard
+// belongs at the call site.
+
+describe('issue #124 — structural change on note open must not trigger side rule', () => {
+  it('function fires when called — guard must be at the call site', async () => {
+    // computeSideInsertChanges has no userEvent context; if called with the
+    // structural change shape it WILL produce a spec. The fix is that main.ts
+    // never calls this function for non-input transactions.
+    const rules = await makeRules("'`' -> '`' + '`'");
+    const BT = '`';
+    const doc = BT.repeat(3) + 'shell\nfoo\n' + BT.repeat(3);
+
+    const { startState, changes } = buildSelectionReplace(doc, 0, 3, BT);
+    const specs = computeSideInsertChanges(startState, changes, rules, mockProgramTxn);
+
+    // Function fires — caller is responsible for not invoking it on structural changes
+    expect(specs).toHaveLength(1);
+    expect((specs[0].changes as any).insert).toBe(BT.repeat(5));
+  });
+
+  it('user genuinely selecting ``` and typing ` should wrap (user intent)', async () => {
+    const rules = await makeRules("'`' -> '`' + '`'");
+    const BT = '`';
+
+    const { startState, changes } = buildSelectionReplace(BT.repeat(3), 0, 3, BT);
+    const specs = computeSideInsertChanges(startState, changes, rules, mockProgramTxn);
+
+    expect(specs).toHaveLength(1);
+    expect((specs[0].changes as any).insert).toBe(BT.repeat(5));
+  });
+
+  it('ChangeSet shapes are identical — guard in main.ts is the only differentiator', () => {
+    const BT = '`';
+    const structuralChange = buildSelectionReplace(BT.repeat(3) + 'shell\nfoo\n' + BT.repeat(3), 0, 3, BT);
+    const userChange = buildSelectionReplace(BT.repeat(3), 0, 3, BT);
+
+    let sr: any, ur: any;
+    structuralChange.changes.iterChanges((a, b, c, d, ins) => { sr = { a, b, c, d, ins: ins.sliceString(0) }; });
+    userChange.changes.iterChanges((a, b, c, d, ins) => { ur = { a, b, c, d, ins: ins.sliceString(0) }; });
+
+    expect(sr).toEqual(ur);
+  });
+});
 
 // ─── undo / redo: richer scenarios ───────────────────────────────────────────
 

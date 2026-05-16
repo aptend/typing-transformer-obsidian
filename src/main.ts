@@ -267,9 +267,9 @@ export default class TypingTransformer extends Plugin {
 
 	sidesInsertFilter = (update: ViewUpdate) => {
 		if (!update.docChanged || update.transactions.some(tr => ignoreThisTr(tr))) { return; }
-		const isUserInput = update.transactions.some(tr => tr.isUserEvent('input'));
+		if (!update.transactions.some(tr => tr.isUserEvent('input'))) { return; }
 		const specs = computeSideInsertChanges(
-			update.startState, update.changes, this.rules, ProgramTxn, isUserInput,
+			update.startState, update.changes, this.rules, ProgramTxn,
 		);
 		if (specs.length > 0) {
 			update.view.dispatch(...specs);
