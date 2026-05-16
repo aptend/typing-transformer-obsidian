@@ -24,3 +24,7 @@ data.json
 .env
 
 build
+
+# test coverage
+coverage
+.nyc_output

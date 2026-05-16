@@ -5,7 +5,11 @@
     "main": "src/main.js",
     "scripts": {
         "dev": "node esbuild.config.mjs",
-        "build": "node esbuild.config.mjs production"
+        "build": "node esbuild.config.mjs production",
+        "test": "vitest",
+        "test:ui": "vitest --ui",
+        "test:coverage": "vitest --coverage",
+        "test:coverage:open": "vitest --coverage --run && xdg-open coverage/index.html || open coverage/index.html || powershell.exe -c \"Start-Process coverage/index.html\" || start coverage/index.html"
     },
     "keywords": [],
     "author": "",
@@ -15,9 +19,11 @@
         "@codemirror/state": "6.5.0",
         "@codemirror/view": "6.38.6",
         "@eslint/js": "^9.31.0",
-        "@types/node": "^16.11.6",
+        "@types/node": "^22.0.0",
         "@typescript-eslint/eslint-plugin": "^8.37.0",
         "@typescript-eslint/parser": "^8.37.0",
+        "@vitest/coverage-v8": "^4.1.6",
+        "@vitest/ui": "^4.1.6",
         "builtin-modules": "3.3.0",
         "codemirror": "^6.0.0",
         "esbuild": "^0.19.12",
@@ -26,6 +32,7 @@
         "obsidian": "latest",
         "tslib": "2.4.0",
         "typescript": "5.8.3",
-        "typescript-eslint": "^8.37.0"
+        "typescript-eslint": "^8.37.0",
+        "vitest": "^4.1.6"
     }
 }
