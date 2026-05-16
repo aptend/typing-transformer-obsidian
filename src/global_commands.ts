@@ -16,9 +16,16 @@ export function getAllCommands(plugin: TypingTransformer): Command[] {
         editorCallback: async (_e: Editor, _v: MarkdownView) => await plugin.toggleIndicator()
     };
 
-    const ret = [format, zone];
+    const profileCommands = generateProfileCommands(plugin);
 
+    return [format, zone, ...profileCommands];
+}
 
+export function profileCommandNameFromIndex(index: number): string {
+  return `typing-trans-p${index.toString()}`
+}
+
+export function generateProfileCommands(plugin: TypingTransformer): Command[] {
     const useProfileX = async (i: number) => {
         const profs = plugin.settings.profiles;
         if (i >= profs.length) {
@@ -32,15 +39,23 @@ export function getAllCommands(plugin: TypingTransformer): Command[] {
         plugin.configureProfile(title, newRule);
     };
 
-    for (let i = 0; i < 6; i++) {
+    const ret = [];
+
+    const profiles = plugin.settings.profiles;
+
+    for (let [i, profile] of profiles.entries()) {
+        // We use the index here as it will overwrite existing commands with shared indices. As long
+        // as we call this on settings exit, which we DO, the commands should always work and have
+        // the correct name.
         const useProfileCommand = {
-            id: "typing-trans-p" + i.toString(),
-            name: "apply profile " + i.toString() + (i === 0 ? " (global)" : ""),
+            id: profileCommandNameFromIndex(i),
+            name: "Apply '" + profile.title + "' Profile",
             editorCallback: async (_e: Editor, _v: MarkdownView) => {
                 await useProfileX(i);
             }
         };
         ret.push(useProfileCommand);
     }
+
     return ret;
 }
