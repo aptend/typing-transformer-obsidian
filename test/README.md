@@ -2,13 +2,13 @@
 
 This project uses [Vitest](https://vitest.dev/) as the testing framework.
 
-📊 **[Coverage UI Guide](./COVERAGE.md)** - Detailed guide on using the coverage report UI
+Use Node.js 26 and run `npm ci` first. See [Development](../docs/Development.md) for the full toolchain.
 
 ## Running Tests
 
 ```bash
 # Run tests once
-npm test
+npm test -- --run
 
 # Run tests in watch mode (auto-rerun on file changes)
 npm test -- --watch
@@ -53,7 +53,8 @@ The coverage UI provides:
 ```
 test/
 ├── unit/               # Unit tests
-│   ├── utils.test.ts           # String utility functions
+│   ├── conv-rule-match.test.ts # Rule matching and parser edge cases
+│   ├── editor-logic.test.ts    # Real CodeMirror State and history
 │   ├── rule-parser.test.ts     # Rule parsing and validation
 │   └── side-rule.test.ts       # Selection rule tests
 ├── mocks/              # Mock implementations
@@ -79,9 +80,10 @@ The test suite currently covers:
 - ✅ Comment parsing
 - ✅ Cursor position calculation in selection rules
 
-### Coverage Statistics:
-- Overall: ~58% statement coverage
-- ext_convert.ts: ~73% statement coverage (main conversion logic)
+### Coverage Statistics
+
+Generate a fresh report with `npm run test:coverage -- --run`. Coverage excludes
+`src/main.ts` and `src/settings.ts`; it does not establish Obsidian UI or WASM coverage.
 
 ## Writing New Tests
 
@@ -110,7 +112,10 @@ The project uses mocks for:
 - **Obsidian API**: File system operations, plugins, UI components
 - **CodeMirror**: Editor state and view components
 
-These mocks are automatically aliased in `vitest.config.ts` so you don't need to manually import them.
+The `unit` project aliases Obsidian and CodeMirror to mocks. The `editor-logic`
+project mocks only Obsidian and uses real CodeMirror State/history. These tests
+do not instantiate Obsidian or exercise actual IME input; use the local vault
+workflow in the development guide for those checks.
 
 ## CI Integration
 
@@ -122,7 +127,7 @@ Tests can be integrated into CI/CD pipelines:
   run: npm test -- --run
   
 - name: Generate coverage
-  run: npm run test:coverage
+  run: npm run test:coverage -- --run
 ```
 
 ## Tips
@@ -131,3 +136,27 @@ Tests can be integrated into CI/CD pipelines:
 2. **Debug tests**: Add `console.log()` or use the UI mode for better debugging
 3. **Coverage**: Aim to test critical paths and edge cases
 4. **Mock carefully**: Only mock external dependencies, not internal logic
+
+## Manual Obsidian regression checks
+
+Use a dedicated vault with only this plugin enabled. Check both Source mode
+and Live Preview. The 2026-11-11 smoke run on Obsidian 1.14.4 verified:
+
+- Typing `dpx` one key at a time expands to `don't panic`; undo restores the
+  trigger and then the input, and redo restores the conversion.
+- Single-character Chinese punctuation insertion pairs `《》` and `（）`, keeps
+  the cursor between the pair, supports chained `《` conversion, and deletes
+  paired punctuation on backspace.
+- Selecting `hello` and typing `<` produces `<hello>`.
+- Inserting `中文English` and typing a comma produces `中文 English,`.
+- Opening a fenced code block leaves it unchanged; typing punctuation inside
+  the block does not add spacing.
+- Creating a Profile, saving a custom rule, and switching back to Global
+  enables and disables that rule as expected.
+- The separate Settings window renders initial rule text and syntax highlighting
+  immediately, and the selected Profile remains readable in the light theme.
+
+The scripted Chinese punctuation checks insert one character through the
+clipboard. They do not cover a real IME candidate/composition session. Test
+Chinese IME input manually before release, and check interactions with other
+typing plugins separately in the user's usual vault.

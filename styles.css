@@ -59,7 +59,7 @@
 
 .rules-profile-button.selected {
     background: var(--background-primary);
-    color: var(--text-on-accent); 
+    color: var(--text-normal);
 }
 
 .rules-profile-button.clickable-icon {

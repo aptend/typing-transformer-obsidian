@@ -22,7 +22,7 @@ export function getAllCommands(plugin: TypingTransformer): Command[] {
 }
 
 export function profileCommandNameFromIndex(index: number): string {
-  return `typing-trans-p${index.toString()}`
+  return `typing-trans-p${index.toString()}`;
 }
 
 export function generateProfileCommands(plugin: TypingTransformer): Command[] {
@@ -43,7 +43,7 @@ export function generateProfileCommands(plugin: TypingTransformer): Command[] {
 
     const profiles = plugin.settings.profiles;
 
-    for (let [i, profile] of profiles.entries()) {
+    for (const [i, profile] of profiles.entries()) {
         // We use the index here as it will overwrite existing commands with shared indices. As long
         // as we call this on settings exit, which we DO, the commands should always work and have
         // the correct name.
