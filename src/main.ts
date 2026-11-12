@@ -1,4 +1,4 @@
-import { editorInfoField, FileSystemAdapter, Plugin } from 'obsidian';
+import { editorInfoField, editorViewField, FileSystemAdapter, Plugin } from 'obsidian';
 import { Annotation, Extension, StateField, Transaction } from '@codemirror/state';
 import { history } from '@codemirror/commands';
 import { EditorView, ViewUpdate } from '@codemirror/view';
@@ -177,7 +177,8 @@ export default class TypingTransformer extends Plugin {
 		const to = mainSel.anchor;
 		if (from == to) { return; } // skip empty string and... 
 		// Metadata from another note must not decide whether this editor can format.
-		const file = state.field(editorInfoField, false)?.file;
+		const infoField = editorInfoField ?? editorViewField;
+		const file = infoField ? state.field(infoField, false)?.file : undefined;
 		const sections = file ? this.app.metadataCache.getFileCache(file)?.sections : undefined;
 		for (const section of sections ?? []) { // ... special sections and ..
 			if (section.type !== 'code' && section.type !== 'match') { continue; }

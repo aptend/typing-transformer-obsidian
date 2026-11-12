@@ -195,6 +195,9 @@ editor attachment changes while it waits; the typed trigger remains literal.
 Formatting obtains metadata for the editor's own file, including when other
 files are being indexed. Production-boundary tests cover both guarantees, as
 well as Profile switches and detached editors during delayed reads.
+An isolated API-boundary suite also verifies the `editorViewField` fallback
+when older Obsidian versions do not export `editorInfoField`; this does not
+replace running the UI suite against those older applications.
 
 The event-boundary tests execute the production `sidesInsertFilter`, so removing
 its non-user-input guard causes a failure; they do not duplicate that guard in a
