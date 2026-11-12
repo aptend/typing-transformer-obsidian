@@ -202,7 +202,7 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
         if (validityIndicator.extraSettingsEl.hasClass("invalid")) {
             return new Promise((resolve, _reject) => {
                 new ConfirmationModal(
-                    app,
+                    plugin.app,
                     "Are you sure you want to discard changes?",
                     async (ans: boolean) => {
                         if (ans) resetValidityIndicator();
@@ -264,9 +264,9 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
     };
 
     const convertRulesEditor = new EditorView({
+        parent: customCSSWrapper,
         state: EditorState.create({ doc: plugin.settings.convertRules, extensions: extensions })
     });
-    customCSSWrapper.appendChild(convertRulesEditor.dom);
 
     const buttonsDiv = rulesFooter.createDiv("rules-editor-buttons");
     const reset = new ButtonComponent(buttonsDiv);
@@ -292,9 +292,9 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
             onProfileClick(BaseProfileName, state.baseProfileEl);
 
         // If we remove a profile, we want to remove its profile command as well.
-        let profileIndex = plugin.settings.profiles.findIndex((p) => p.title === name);
+        const profileIndex = plugin.settings.profiles.findIndex((p) => p.title === name);
         if (profileIndex) {
-            let commandName = profileCommandNameFromIndex(profileIndex);
+            const commandName = profileCommandNameFromIndex(profileIndex);
             plugin.removeCommand(commandName);
         }
         
@@ -329,7 +329,7 @@ function createRuleEditorInContainer(container: HTMLElement, plugin: TypingTrans
             new Notice("You can only have 6 profiles at most.");
             return;
         }
-        new StringInputModal(app, (value: string): boolean => {
+        new StringInputModal(plugin.app, (value: string): boolean => {
             if (state.profilesMap.has(value)) return false;
             if (value === undefined) return true;
             state.profilesMap.set(value, "");

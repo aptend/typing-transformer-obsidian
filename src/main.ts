@@ -60,7 +60,7 @@ export default class TypingTransformer extends Plugin {
 		await this.loadSettings();
 		initLog(this.settings);
 		// make wasm ready
-		await init(wasmbin instanceof Uint8Array ? wasmbin.buffer : wasmbin);
+		await init({ module_or_path: wasmbin instanceof Uint8Array ? wasmbin.buffer : wasmbin });
 		this.specialSections = [];
 		this.activeExts = [];
 		this.availablExts = [

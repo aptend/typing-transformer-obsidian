@@ -27,7 +27,6 @@ export async function computeConvertChanges(
             trigger = DEL_TRIG;
             // del: 578 579 578 578 -> insert: 579 579 579 580
             fromB += 1;
-            toB = fromB + 1;
         } else {
             shouldHijack = false;
         }
