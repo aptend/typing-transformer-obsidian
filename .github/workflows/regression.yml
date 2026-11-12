@@ -28,7 +28,7 @@ jobs:
         run: |
           rustup toolchain install 1.99.1 --profile minimal --target wasm32-unknown-unknown
           rustup default 1.99.1
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         id: wasm-pack
         with:
           path: ~/.cargo/bin/wasm-pack
@@ -36,6 +36,11 @@ jobs:
       - name: Install wasm-pack
         if: steps.wasm-pack.outputs.cache-hit != 'true'
         run: cargo install wasm-pack --version 0.15.1 --locked
+      - uses: actions/cache/save@v4
+        if: steps.wasm-pack.outputs.cache-hit != 'true'
+        with:
+          path: ~/.cargo/bin/wasm-pack
+          key: wasm-pack-0.15.1-${{ runner.os }}-${{ runner.arch }}
       - name: Build production plugin
         run: make build
       - name: Lint and typecheck
