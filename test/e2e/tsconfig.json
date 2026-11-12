@@ -11,7 +11,8 @@
       "DOM",
       "ES2022"
     ],
-    "rootDir": "../.."
+    "rootDir": "../..",
+    "skipLibCheck": true
   },
   "include": [
     "./**/*.ts",

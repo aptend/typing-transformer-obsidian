@@ -42,20 +42,29 @@ jobs:
           path: ~/.cargo/bin/wasm-pack
           key: wasm-pack-0.15.1-${{ runner.os }}-${{ runner.arch }}
       - name: Build production plugin
+        id: build
         run: make build
       - name: Lint and typecheck
         run: |
           npm run lint
           npm run typecheck
       - name: Unit, production event boundaries and real WASM
+        id: unit
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: npm run test:coverage -- --run
+      - name: Prove the input-event regression test detects a broken guard
+        if: ${{ !cancelled() && steps.unit.outcome == 'success' }}
+        run: node test/plugin/verify-guard-regression.mjs
       - uses: actions/cache@v4
         with:
           path: .obsidian-cache
           key: obsidian-1.14.4-installer-1.9.14-${{ runner.os }}-${{ runner.arch }}
       - name: Install virtual desktop
+        id: desktop
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: sudo apt-get update -q && sudo apt-get install -y xvfb openbox
       - name: Real Obsidian regression
+        if: ${{ !cancelled() && steps.desktop.outcome == 'success' }}
         run: xvfb-run -a --server-args="-screen 0 1600x1000x24" bash -c 'openbox > /tmp/tt-openbox.log 2>&1 & npm run test:e2e'
       - name: Upload diagnostics
         if: always()

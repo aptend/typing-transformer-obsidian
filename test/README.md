@@ -195,3 +195,11 @@ when available, retained for seven days. Find the artifact on the GitHub Actions
 run page. Set `Unit, WASM and Obsidian regression` as a required check in branch
 protection if merges must be blocked on failures. The existing release workflow
 is unchanged.
+
+E2E declarations use their own TypeScript configuration. Only that configuration
+skips checking third-party `.d.ts` internals (WDIO/Node/DOM declaration conflicts);
+our E2E source and the plugin still undergo typechecking. Independent test stages
+continue after a failed assertion to collect diagnostics, but any failed stage
+keeps the GitHub check red. A CI-only mutation check temporarily removes the
+production input-event guard and requires its regression assertion to fail,
+then restores the source in a `finally` block.
