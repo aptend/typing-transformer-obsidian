@@ -11,7 +11,8 @@
         "test:coverage": "vitest --coverage",
         "test:coverage:open": "vitest --coverage --run && xdg-open coverage/index.html || open coverage/index.html || powershell.exe -c \"Start-Process coverage/index.html\" || start coverage/index.html",
         "lint": "eslint src",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "test:e2e": "node test/e2e/prepare.mjs && wdio run wdio.conf.mts"
     },
     "keywords": [],
     "author": "",
@@ -36,7 +37,17 @@
         "tslib": "2.9.1",
         "typescript": "6.0.3",
         "typescript-eslint": "^8.72.2",
-        "vitest": "^5.1.0"
+        "vitest": "^5.1.0",
+        "wdio-obsidian-service": "3.5.0",
+        "wdio-obsidian-reporter": "3.5.0",
+        "@wdio/cli": "10.2.0",
+        "@wdio/local-runner": "10.2.0",
+        "@wdio/mocha-framework": "10.2.0",
+        "@wdio/globals": "10.2.0",
+        "webdriverio": "10.2.0",
+        "mocha": "12.0.3",
+        "@types/mocha": "10.0.10",
+        "tsx": "4.23.15"
     },
     "overrides": {
         "@codemirror/state": "$@codemirror/state",

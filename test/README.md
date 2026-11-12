@@ -83,7 +83,7 @@ The test suite currently covers:
 ### Coverage Statistics
 
 Generate a fresh report with `npm run test:coverage -- --run`. Coverage excludes
-`src/main.ts` and `src/settings.ts`; it does not establish Obsidian UI or WASM coverage.
+`src/settings.ts`; it does not establish Obsidian UI or WASM coverage.
 
 ## Writing New Tests
 
@@ -160,3 +160,38 @@ The scripted Chinese punctuation checks insert one character through the
 clipboard. They do not cover a real IME candidate/composition session. Test
 Chinese IME input manually before release, and check interactions with other
 typing plugins separately in the user's usual vault.
+
+## GitHub Actions regression suite
+
+The `Regression` workflow runs on pull requests and pushes to `main`, and can be
+started manually. Builds and tests run on GitHub-hosted Ubuntu, not against an
+installed local Obsidian or a developer vault. The job has read-only repository
+permissions and does not need an Obsidian account or repository secrets.
+
+The runner builds the production JS/WASM first, then runs lint, typechecking,
+Vitest (including the production event filters and actual compiled WASM), and
+WebdriverIO with `wdio-obsidian-service`. Desktop tests pin Obsidian app 1.14.4
+and installer 1.9.14 independently. Downloads are cached; one worker reuses the
+application except for the cold-start regression. There are no automatic retries
+to hide failures.
+
+The UI suite covers fenced-code cold start/restart (#124), Source and Live
+Preview conversion with reversible undo/redo, paired deletion and selection
+cursor placement, automatic spacing, independent Settings-window rendering and
+mouse/arrow input (#125), and Profile commands across plugin reload (#123).
+The event-boundary tests execute the production `sidesInsertFilter`, so removing
+its non-user-input guard causes a failure; they do not duplicate that guard in a
+test helper. Draft-validation tests require active rules to remain unchanged.
+
+`test/e2e/prepare.mjs` seeds an expendable vault under `artifacts/` with only the
+built plugin and known test data. The service makes another isolated copy. Test
+setup may use Obsidian APIs; tested typing, selection, undo/redo and Settings
+editing use real WebDriver input. Assertions read editor content, selection,
+configuration and on-disk notes. This is not native OS IME testing. Windows,
+macOS, older application versions and mobile remain separate release checks.
+
+Failures upload coverage, WebDriver logs, a screenshot and active-editor state
+when available, retained for seven days. Find the artifact on the GitHub Actions
+run page. Set `Unit, WASM and Obsidian regression` as a required check in branch
+protection if merges must be blocked on failures. The existing release workflow
+is unchanged.
