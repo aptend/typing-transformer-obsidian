@@ -181,6 +181,21 @@ The UI suite covers fenced-code cold start/restart (#124), Source and Live
 Preview conversion with reversible undo/redo, paired deletion and selection
 cursor placement, automatic spacing, independent Settings-window rendering and
 mouse/arrow input (#125), and Profile commands across plugin reload (#123).
+Additional UI scenarios cover invalid drafts on close/reopen, cancel/confirm
+discard when switching Profile, actual system clipboard updates (#109), full
+undo/redo and redo invalidation after both effective and no-op formatting (#74),
+and code-block protection while background notes are indexed in both editor
+modes. Clipboard race tests hold a platform read pending while real input types,
+moves the cursor, or switches notes, then release it and verify editor content,
+selection and unhandled rejections. This controlled platform stub is separate
+from the test using the runner's actual system clipboard.
+
+An asynchronous conversion is canceled if the editor state, active rules or
+editor attachment changes while it waits; the typed trigger remains literal.
+Formatting obtains metadata for the editor's own file, including when other
+files are being indexed. Production-boundary tests cover both guarantees, as
+well as Profile switches and detached editors during delayed reads.
+
 The event-boundary tests execute the production `sidesInsertFilter`, so removing
 its non-user-input guard causes a failure; they do not duplicate that guard in a
 test helper. Draft-validation tests require active rules to remain unchanged.

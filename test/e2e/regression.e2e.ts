@@ -337,12 +337,12 @@ describe('real Obsidian regression', () => {
       await browser.waitUntil(async () => {
         for (const handle of [windows.settings, windows.main]) {
           await browser.switchToWindow(handle);
-          if (await browser.$(`.modal button=${answer}`).isExisting()) { modalWindow = handle; return true; }
+          if (await browser.$(`button=${answer}`).isExisting()) { modalWindow = handle; return true; }
         }
         return false;
       }, { timeoutMsg: 'Discard confirmation was not shown' });
       await browser.switchToWindow(modalWindow!);
-      await browser.$(`.modal button=${answer}`).click();
+      await browser.$(`button=${answer}`).click();
       await browser.switchToWindow(windows.settings);
     }
     try {
