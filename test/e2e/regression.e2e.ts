@@ -197,7 +197,7 @@ describe('real Obsidian regression', () => {
     }, id);
     const command = `${id}:typing-trans-p1`;
     assert.equal(await browser.executeObsidian(({ app }, command) =>
-      (app as any).commands.commands[command]?.name, command), "Apply 'CI Profile' Profile");
+      (app as any).commands.commands[command]?.name, command), "Typing Transformer: Apply 'CI Profile' Profile");
     await browser.executeObsidianCommand(command);
     await browser.waitUntil(() => browser.executeObsidian(({ app }, pluginId) =>
       (app as any).plugins.getPlugin(pluginId).settings.activeProfile === 'CI Profile', id));

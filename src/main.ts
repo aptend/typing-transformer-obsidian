@@ -136,9 +136,9 @@ export default class TypingTransformer extends Plugin {
 	};
 
 	checkRules = async (ruleString: string): Promise<string[]> => {
-		this.rules = new Rules();
-		await this.rules.parse(ruleString, this.app.vault.adapter, true);
-		return this.rules.errors;
+		const checkedRules = new Rules();
+		await checkedRules.parse(ruleString, this.app.vault.adapter, true);
+		return checkedRules.errors;
 	};
 
 	configureActiveExtsFromSettings = () => {
