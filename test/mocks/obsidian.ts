@@ -1,4 +1,11 @@
 // Mock Obsidian API for testing
+import { StateField } from '@codemirror/state';
+
+export const editorInfoField = StateField.define<any>({
+  create: () => ({ file: null }),
+  update: value => value,
+});
+export const editorViewField = editorInfoField;
 
 export interface DataAdapter {
   stat(path: string): Promise<any>;

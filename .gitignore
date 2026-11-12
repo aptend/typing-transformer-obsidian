@@ -30,3 +30,7 @@ coverage
 
 # Generated Rust/WASM bindings
 /liberty-web/
+
+# Isolated CI regression artifacts and downloaded Obsidian
+/artifacts/
+/.obsidian-cache/

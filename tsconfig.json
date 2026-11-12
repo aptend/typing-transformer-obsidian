@@ -16,10 +16,17 @@
       "ES2021"
     ],
     "outDir": "build",
-    "strict": false
+    "strict": false,
+    "types": [
+      "node"
+    ]
   },
   "include": [
     "**/*.ts",
     "**/*.mts"
+  ],
+  "exclude": [
+    "test/e2e",
+    "wdio.conf.mts"
   ]
 }

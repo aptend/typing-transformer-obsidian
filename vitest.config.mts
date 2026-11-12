@@ -8,9 +8,18 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       include: ['src/**/*.ts'],
-      exclude: ['src/main.ts', 'src/settings.ts'],
+      exclude: ['src/settings.ts'],
     },
     projects: [
+      {
+        test: { name: 'plugin', include: ['test/plugin/**/*.test.ts'] },
+        resolve: { alias: {
+          'obsidian': new URL('./test/mocks/obsidian.ts', import.meta.url).pathname,
+        } },
+      },
+      {
+        test: { name: 'wasm', include: ['test/wasm/**/*.test.ts'] },
+      },
       // 原有单元测试：全部走 mock alias
       {
         test: {

@@ -2,7 +2,14 @@
 
 This project uses [Vitest](https://vitest.dev/) as the testing framework.
 
-Use Node.js 26 and run `npm ci` first. See [Development](../docs/Development.md) for the full toolchain.
+Pull requests run the complete regression suite in GitHub Actions; no local
+Obsidian installation is required. See [GitHub Actions regression suite](#github-actions-regression-suite)
+below for the scenarios and diagnostics.
+
+For optional local execution, use Node.js 26, run `npm ci`, and build with
+`make build` first: the plugin/WASM projects import generated bindings. Building
+deploys to the target in `.env` if configured. See [Development](../docs/Development.md)
+for the full toolchain.
 
 ## Running Tests
 
@@ -57,6 +64,9 @@ test/
 │   ├── editor-logic.test.ts    # Real CodeMirror State and history
 │   ├── rule-parser.test.ts     # Rule parsing and validation
 │   └── side-rule.test.ts       # Selection rule tests
+├── plugin/             # Production filters and draft-validation isolation
+├── wasm/               # Actual compiled Rust/WASM bindings
+├── e2e/                # Real Obsidian input and window regressions
 ├── mocks/              # Mock implementations
 │   ├── obsidian.ts             # Mock Obsidian API
 │   ├── codemirror-state.ts     # Mock CodeMirror State
@@ -83,7 +93,9 @@ The test suite currently covers:
 ### Coverage Statistics
 
 Generate a fresh report with `npm run test:coverage -- --run`. Coverage excludes
-`src/main.ts` and `src/settings.ts`; it does not establish Obsidian UI or WASM coverage.
+`src/settings.ts`; JavaScript coverage does not measure Rust internals or
+establish UI coverage. The separate WASM and Obsidian suites exercise those
+boundaries through behavior assertions.
 
 ## Writing New Tests
 
@@ -108,27 +120,17 @@ describe('My new feature', () => {
 
 ## Mocking
 
-The project uses mocks for:
-- **Obsidian API**: File system operations, plugins, UI components
-- **CodeMirror**: Editor state and view components
-
 The `unit` project aliases Obsidian and CodeMirror to mocks. The `editor-logic`
-project mocks only Obsidian and uses real CodeMirror State/history. These tests
-do not instantiate Obsidian or exercise actual IME input; use the local vault
-workflow in the development guide for those checks.
+project mocks only Obsidian and uses real CodeMirror State/history. The `plugin`
+project uses the actual plugin and rules with real CodeMirror transactions,
+while mocking Obsidian, Settings UI and WASM. The `wasm` project loads the compiled
+module without mocks. Only the separate E2E suite instantiates Obsidian. Native
+IME composition still requires the manual vault checks below.
 
 ## CI Integration
 
-Tests can be integrated into CI/CD pipelines:
-
-```yaml
-# Example GitHub Actions workflow
-- name: Run tests
-  run: npm test -- --run
-  
-- name: Generate coverage
-  run: npm run test:coverage -- --run
-```
+See [the workflow](../.github/workflows/regression.yml) and the detailed CI
+description below. A failing stage marks the GitHub check as failed.
 
 ## Tips
 
@@ -160,3 +162,64 @@ The scripted Chinese punctuation checks insert one character through the
 clipboard. They do not cover a real IME candidate/composition session. Test
 Chinese IME input manually before release, and check interactions with other
 typing plugins separately in the user's usual vault.
+
+## GitHub Actions regression suite
+
+The `Regression` workflow runs on pull requests and pushes to `main`, and can be
+started manually. Builds and tests run on GitHub-hosted Ubuntu, not against an
+installed local Obsidian or a developer vault. The job has read-only repository
+permissions and does not need an Obsidian account or repository secrets.
+
+The runner builds the production JS/WASM first, then runs lint, typechecking,
+Vitest (including the production event filters and actual compiled WASM), and
+WebdriverIO with `wdio-obsidian-service`. Desktop tests pin Obsidian app 1.14.4
+and installer 1.9.14 independently. Downloads are cached; one worker reuses the
+application except for the cold-start regression. There are no automatic retries
+to hide failures.
+
+The UI suite covers fenced-code cold start/restart (#124), Source and Live
+Preview conversion with reversible undo/redo, paired deletion and selection
+cursor placement, automatic spacing, independent Settings-window rendering and
+mouse/arrow input (#125), and Profile commands across plugin reload (#123).
+Additional UI scenarios cover invalid drafts on close/reopen, cancel/confirm
+discard when switching Profile, actual system clipboard updates (#109), full
+undo/redo and redo invalidation after both effective and no-op formatting (#74),
+and code-block protection while background notes are indexed in both editor
+modes. Clipboard race tests hold a platform read pending while real input types,
+moves the cursor, or switches notes, then release it and verify editor content,
+selection and unhandled rejections. This controlled platform stub is separate
+from the test using the runner's actual system clipboard.
+
+An asynchronous conversion is canceled if the editor state, active rules or
+editor attachment changes while it waits; the typed trigger remains literal.
+Formatting obtains metadata for the editor's own file, including when other
+files are being indexed. Production-boundary tests cover both guarantees, as
+well as Profile switches and detached editors during delayed reads.
+An isolated API-boundary suite also verifies the `editorViewField` fallback
+when older Obsidian versions do not export `editorInfoField`; this does not
+replace running the UI suite against those older applications.
+
+The event-boundary tests execute the production `sidesInsertFilter`, so removing
+its non-user-input guard causes a failure; they do not duplicate that guard in a
+test helper. Draft-validation tests require active rules to remain unchanged.
+
+`test/e2e/prepare.mjs` seeds an expendable vault under `artifacts/` with only the
+built plugin and known test data. The service makes another isolated copy. Test
+setup may use Obsidian APIs; tested typing, selection, undo/redo and Settings
+editing use real WebDriver input. Assertions read editor content, selection,
+configuration and on-disk notes. This is not native OS IME testing. Windows,
+macOS, older application versions and mobile remain separate release checks.
+
+Failures upload coverage, WebDriver logs, a screenshot and active-editor state
+when available, retained for seven days. Find the artifact on the GitHub Actions
+run page. Set `Unit, WASM and Obsidian regression` as a required check in branch
+protection if merges must be blocked on failures. The existing release workflow
+is unchanged.
+
+E2E declarations use their own TypeScript configuration. Only that configuration
+skips checking third-party `.d.ts` internals (WDIO/Node/DOM declaration conflicts);
+our E2E source and the plugin still undergo typechecking. Independent test stages
+continue after a failed assertion to collect diagnostics, but any failed stage
+keeps the GitHub check red. A CI-only mutation check temporarily removes the
+production input-event guard and requires its regression assertion to fail,
+then restores the source in a `finally` block.

@@ -1,4 +1,4 @@
-import { FileSystemAdapter, Plugin, Pos } from 'obsidian';
+import { editorInfoField, editorViewField, FileSystemAdapter, Plugin } from 'obsidian';
 import { Annotation, Extension, StateField, Transaction } from '@codemirror/state';
 import { history } from '@codemirror/commands';
 import { EditorView, ViewUpdate } from '@codemirror/view';
@@ -43,7 +43,6 @@ function ignoreThisTr(tr: Transaction): boolean {
 
 export default class TypingTransformer extends Plugin {
 	settings: TypingTransformerSettings;
-	specialSections: Pos[];
 	rules: Rules;
 	availablExts: Extension[];
 	activeExts: Extension[];
@@ -61,7 +60,6 @@ export default class TypingTransformer extends Plugin {
 		initLog(this.settings);
 		// make wasm ready
 		await init({ module_or_path: wasmbin instanceof Uint8Array ? wasmbin.buffer : wasmbin });
-		this.specialSections = [];
 		this.activeExts = [];
 		this.availablExts = [
 			EditorView.updateListener.of(this.sidesInsertFilter),
@@ -77,16 +75,6 @@ export default class TypingTransformer extends Plugin {
 		// activate selected extensions
 		this.configureActiveExtsFromSettings();
 		this.registerEditorExtension(this.activeExts);
-		// subscribe meta change
-		this.registerEvent(this.app.metadataCache.on("changed", (_f, _d, meta) => {
-			this.specialSections.length = 0;
-			meta.sections?.forEach((sec) => {
-				if (sec.type == "code" || sec.type == "match") {
-					this.specialSections.push(sec.position);
-				}
-			});
-		}));
-
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SettingTab(this.app, this));
 		for (const cmd of getAllCommands(this)) {
@@ -136,9 +124,9 @@ export default class TypingTransformer extends Plugin {
 	};
 
 	checkRules = async (ruleString: string): Promise<string[]> => {
-		this.rules = new Rules();
-		await this.rules.parse(ruleString, this.app.vault.adapter, true);
-		return this.rules.errors;
+		const checkedRules = new Rules();
+		await checkedRules.parse(ruleString, this.app.vault.adapter, true);
+		return checkedRules.errors;
 	};
 
 	configureActiveExtsFromSettings = () => {
@@ -188,7 +176,13 @@ export default class TypingTransformer extends Plugin {
 		const from = line.from;
 		const to = mainSel.anchor;
 		if (from == to) { return; } // skip empty string and... 
-		for (const pos of this.specialSections) { // ... special secions and ..
+		// Metadata from another note must not decide whether this editor can format.
+		const infoField = editorInfoField ?? editorViewField;
+		const file = infoField ? state.field(infoField, false)?.file : undefined;
+		const sections = file ? this.app.metadataCache.getFileCache(file)?.sections : undefined;
+		for (const section of sections ?? []) { // ... special sections and ..
+			if (section.type !== 'code' && section.type !== 'match') { continue; }
+			const pos = section.position;
 			// pos.start.line is 0-based while line.number is 1-based
 			if (pos.start.line <= line.number - 1 && line.number - 1 <= pos.end.line) { return; }
 		}
@@ -257,14 +251,17 @@ export default class TypingTransformer extends Plugin {
 
 	convertFilter = async (update: ViewUpdate) => {
 		if (!update.docChanged || update.transactions.some(tr => ignoreThisTr(tr))) { return; }
-		// NOTE: async dispatch means specs are computed against update.startState; if further
-		// transactions arrive during the await (e.g. clipboard read), positions may be stale.
-		// Known limitation – tracked for future StateEffect-based refactor.
+		const view = update.view;
+		const state = view.state;
+		const rules = this.rules;
 		const { specs, allMatched } = await computeConvertChanges(
-			update.startState, update.changes, this.rules, ProgramTxn,
+			update.startState, update.changes, rules, ProgramTxn,
 		);
+		// Clipboard reads can outlive typing, cursor moves, note/profile switches,
+		// or the editor itself. Drop stale results rather than applying old positions.
+		if (view.state !== state || this.rules !== rules || !view.dom.isConnected) { return; }
 		if (allMatched) {
-			update.view.dispatch(...specs);
+			view.dispatch(...specs);
 		}
 	};
 
