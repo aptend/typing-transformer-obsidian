@@ -26,7 +26,7 @@ async function resetRules() {
 
 async function openNote(live = false, initial = '') {
   const path = `Regression-${++noteNumber}.md`;
-  await browser.executeObsidian(async ({ app, obsidian }, path, live, initial) => {
+  const livePreview = await browser.executeObsidian(async ({ app, obsidian }, path, live, initial) => {
     await app.vault.create(path, initial);
     const leaf = app.workspace.getLeaf(false);
     await leaf.setViewState({ type: 'markdown', state: { file: path, mode: 'source', source: !live } });
@@ -35,7 +35,9 @@ async function openNote(live = false, initial = '') {
     cm.contentDOM.dataset.ttE2e = 'note';
     view.editor.setCursor({ line: 0, ch: 0 });
     cm.focus();
+    return cm.dom.closest('.markdown-source-view').classList.contains('is-live-preview');
   }, path, live, initial);
+  assert.equal(livePreview, live, 'the test must exercise the requested editor mode');
   await browser.$('[data-tt-e2e="note"]').click();
   return path;
 }

@@ -148,7 +148,16 @@ can produce a different editor transaction.
 
 ## 4. Automated checks
 
+Pull requests automatically run the `Regression` GitHub Actions workflow. It
+builds the plugin and WASM, runs lint/typechecks and Vitest, then drives a real
+Obsidian instance in an isolated vault on the runner. No local installation or
+vault is needed. Failure diagnostics are available as a workflow artifact.
+
+For optional local checks, build the generated WASM bindings first. Remember
+that `make build` also deploys to the target in `.env` when that file exists.
+
 ```sh
+make build                      # required before the WASM/plugin test projects
 npm test -- --run                 # one complete test run
 npm test                         # watch mode in an interactive terminal
 npm run test:ui                   # Vitest UI
@@ -158,7 +167,8 @@ npm run typecheck               # TypeScript check
 ```
 
 `make lint` runs ESLint with `--fix` and modifies source files.
-See [the testing guide](../test/README.md) for test projects and coverage.
+See [the testing guide](../test/README.md) for test projects, CI scenarios and
+coverage limits.
 
 ## 5. Releases
 
