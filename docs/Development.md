@@ -176,3 +176,11 @@ The release workflow builds on tag pushes using the Node version in `.nvmrc`
 and `npm ci`. Release artifacts contain `main.js`, `manifest.json`, and
 `styles.css`. For release builds, remove or temporarily move `.env` so the
 bundle is produced in the repository root, where the packaging job expects it.
+
+For each release, update `manifest.json`, `package.json`, the root/package entries
+in `package-lock.json`, and `versions.json`. Add release notes at
+`docs/releases/<version>.md`. Merge the release PR and wait for the `Regression`
+check on that exact main commit before pushing a matching tag without a `v`
+prefix. Pushing the tag starts publication automatically. The release workflow
+validates the versions, uses the same pinned Rust/wasm-pack toolchain as CI,
+uploads all assets to a draft Release, then publishes it as the latest release.
