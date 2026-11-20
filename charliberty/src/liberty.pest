@@ -1,62 +1,46 @@
 Space = _{" "}
 
-Cn = {'\u{4e00}'..'\u{9fa5}'+}
-Eng = {ASCII_ALPHA+}
-Num = @{ASCII_DIGIT+ ~ "."? ~ ASCII_DIGIT* ~ ^"e"? ~ ASCII_DIGIT*}
+Cn = @{HAN+}
+Eng = @{ASCII_ALPHA+}
+// Handle underscore-bearing names before a run can be mistaken for emphasis.
+identifierTail = _{("_"+ ~ ASCII_ALPHANUMERIC+)* ~ "_"*}
+Identifier = @{(ASCII_ALPHANUMERIC+ ~ "_"+ ~ ASCII_ALPHANUMERIC* | "_"+ ~ ASCII_ALPHANUMERIC+) ~ identifierTail}
+Num = @{ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)* ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?}
 
-MultiSpace = {" "{2,}}
 FWPunct = {"。"|"，"|"；"|"、"|"！"|"？"|"："}
 Punct = {"."|","|";"|"!"|"?"|":"}
 
-emphasisMark = { "*"+ |  "_"+ }
-inlineEmChar = _{!PEEK ~ ANY}
-InlineEm = @{PUSH(emphasisMark) ~ inlineEmChar* ~ POP}
+starEmphasis = _{PUSH("*"+) ~ (!PEEK ~ ANY)* ~ POP}
+// In _p_cache_, the underscore before "cache" belongs to the word.
+underscoreEnd = _{PEEK ~ !(ASCII_ALPHANUMERIC | "_")}
+underscoreEmphasis = _{PUSH("_"+) ~ (!underscoreEnd ~ ANY)* ~ POP ~ !(ASCII_ALPHANUMERIC | "_")}
+InlineEm = @{starEmphasis | underscoreEmphasis}
 
-inlineCodeChar = _{!"`" ~ ANY}
-InlineCode = @{"`" ~ inlineCodeChar* ~ "`"}
+// A closing code delimiter must be a run of exactly the same length.
+codeChar = _{!(PEEK ~ !"`") ~ ("`"+ | !"`" ~ ANY)}
+InlineCode = @{PUSH("`"+) ~ codeChar* ~ POP ~ !"`"}
+OpenCode = @{"`"+ ~ ANY*}
 
 inlineMathChar = _{"\\$" | !"$" ~ ANY}
 InlineMath = @{"$" ~ inlineMathChar* ~ "$"}
 
 docChar = _{!"]]" ~ !"[[" ~ ANY}
 DocLink = @{"!"? ~ "[[" ~ docChar+ ~ "]]"}
+linkLabelChar = _{"\\" ~ ANY | !("]" | "[") ~ ANY}
+linkTargetChar = _{"\\" ~ ANY | "(" ~ linkTargetChar* ~ ")" | !("(" | ")") ~ ANY}
+MarkdownLink = @{"!"? ~ "[" ~ linkLabelChar* ~ "](" ~ linkTargetChar* ~ ")"}
 
-
-urlSchema = {("http" ~ "s"?) | "ftp" ~ "://"}
-urlBody = _{!(Space | FWPunct) ~ ANY}
-URL = @{urlSchema ~ urlBody*}
+urlBody = _{!(WHITE_SPACE | FWPunct) ~ ANY}
+URL = @{("https" | "http" | "ftp") ~ "://" ~ urlBody*}
 
 hour = {('0'..'1' ~ '0'..'9') | "2" ~ '0'..'3' }
 minSec = {'0'..'5' ~ '0'..'9'}
 Time = @{hour ~ ":" ~ minSec ~ (":" ~ minSec)? }
+Meridiem = @{^"a.m" | ^"p.m"}
 
-
-// If we are editting in a SpecialBlock, auto format won't take effect
-SpecialBlock = {
-    InlineCode
-    | InlineMath
-    | DocLink
-    | URL
-    | Time
-    | Num  // Num block might contain . which can't be treated like a punct
-    | ^"a.m"
-    | ^"p.m"
-}
-
-OtherChar = _{!(MultiSpace | SpecialBlock | Punct | FWPunct | Cn | Eng) ~ ANY}
+Literal = _{InlineCode | OpenCode | InlineMath | DocLink | MarkdownLink | URL | Time | Meridiem}
+OtherChar = _{!(Space | Literal | InlineEm | Punct | FWPunct | Identifier | Num | Cn | Eng) ~ ANY}
 Other = {OtherChar+}
 
-Block = _{ 
-    MultiSpace
-    | Space
-    | SpecialBlock
-    | InlineEm
-    | Punct 
-    | FWPunct
-    | Num
-    | Cn 
-    | Eng
-    | Other
-}
-
+Block = _{Space | Literal | InlineEm | Punct | FWPunct | Identifier | Num | Cn | Eng | Other}
 Line = {SOI ~ Block* ~ EOI}

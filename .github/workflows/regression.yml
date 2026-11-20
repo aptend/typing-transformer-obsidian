@@ -44,6 +44,8 @@ jobs:
       - name: Build production plugin
         id: build
         run: make build
+      - name: Rust spacing tests
+        run: cargo test --locked --manifest-path charliberty/Cargo.toml
       - name: Lint and typecheck
         run: |
           npm run lint

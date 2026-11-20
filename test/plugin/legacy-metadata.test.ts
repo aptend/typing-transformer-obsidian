@@ -14,8 +14,8 @@ vi.mock('../../src/settings', () => ({
 }));
 vi.mock('../../liberty-web/charliberty_bg.wasm', () => ({ default: new Uint8Array() }));
 vi.mock('../../liberty-web/charliberty', () => ({
-  default: vi.fn(), formatLine: (line: string) => line,
-  getBlockRanges: () => ({ emphasis: new Uint32Array(), special: new Uint32Array() }),
+  default: vi.fn(),
+  planLine: vi.fn((_line: string, to: number) => ({ from: 0, to, takeEdits: () => new Uint32Array(), free: vi.fn() })),
 }));
 
 describe('legacy editor metadata API', () => {
@@ -30,7 +30,8 @@ describe('legacy editor metadata API', () => {
       doc: '中文English,', selection: { anchor: '中文English,'.length },
       extensions: [editorViewField.init(() => ({ file } as never))],
     });
-    const range = plugin.spotLibertyZone({ docChanged: true, view: { state } } as unknown as ViewUpdate);
+    const tr = state.update({ changes: { from: 0, to: 1, insert: '中' } });
+    const range = plugin.spotLibertyZone({ docChanged: tr.docChanged, state: tr.state, transactions: [tr] } as unknown as ViewUpdate);
     expect(getFileCache).toHaveBeenCalledWith(file);
     if (code) expect(range).toBeUndefined();
     else expect(range).toEqual({ from: 0, to: state.doc.length });
