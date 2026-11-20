@@ -1,40 +1,33 @@
-#[macro_use]
-extern crate pest_derive;
-
 mod parser;
 
-use parser::{block_ranges, insert_liberty};
 use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen(js_name=formatLine)]
-pub fn format_line(line: &str) -> String {
-    insert_liberty(line).unwrap()
+#[wasm_bindgen]
+pub struct LinePlan {
+    pub from: usize,
+    pub to: usize,
+    edits: Vec<usize>,
 }
 
 #[wasm_bindgen]
-pub struct Blocks {
-    special: Vec<usize>,
-    emphasis: Vec<usize>,
-}
-
-#[wasm_bindgen]
-impl Blocks {
-    #[wasm_bindgen(getter)]
-    pub fn special(&self) -> Vec<usize> {
-        self.special.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn emphasis(&self) -> Vec<usize> {
-        self.emphasis.clone()
+impl LinePlan {
+    // Pairs of UTF-16 offsets: equal offsets insert one space; a nonempty range removes one.
+    #[wasm_bindgen(js_name=takeEdits)]
+    pub fn take_edits(&mut self) -> Vec<usize> {
+        std::mem::take(&mut self.edits)
     }
 }
 
-#[wasm_bindgen(js_name=getBlockRanges)]
-pub fn get_block_ranges(line: &str, cursor_pos: usize) -> Blocks {
-    let (sp, em) = block_ranges(line, cursor_pos);
-    Blocks {
-        special: sp,
-        emphasis: em,
-    }
+#[wasm_bindgen(js_name=planLine)]
+pub fn plan_line(line: &str, cursor_utf16: usize) -> Option<LinePlan> {
+    let plan = parser::plan_line(line, cursor_utf16)?;
+    Some(LinePlan {
+        from: plan.zone.start,
+        to: plan.zone.end,
+        edits: plan
+            .edits
+            .into_iter()
+            .flat_map(|gap| [gap.start, gap.end])
+            .collect(),
+    })
 }
