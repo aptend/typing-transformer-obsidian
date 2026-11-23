@@ -3,6 +3,7 @@ import { ChangeSet, EditorState } from '@codemirror/state';
 import type { ViewUpdate } from '@codemirror/view';
 import { editorInfoField } from 'obsidian';
 import TypingTransformer from '../../src/main';
+import { planLine } from '../../liberty-web/charliberty';
 
 // Keep the production plugin and its actual filters. Only replace UI/platform
 // dependencies; rules and CodeMirror transactions remain real.
@@ -11,8 +12,8 @@ vi.mock('../../src/settings', () => ({
 }));
 vi.mock('../../liberty-web/charliberty_bg.wasm', () => ({ default: new Uint8Array() }));
 vi.mock('../../liberty-web/charliberty', () => ({
-  default: vi.fn(), formatLine: (line: string) => line,
-  getBlockRanges: () => ({ emphasis: new Uint32Array(), special: new Uint32Array() }),
+  default: vi.fn(),
+  planLine: vi.fn((_line: string, to: number) => ({ from: 0, to, takeEdits: () => new Uint32Array(), free: vi.fn() })),
 }));
 
 async function pluginWithRules(text: string) {
@@ -122,10 +123,67 @@ describe('formatting zones belong to the editor file', () => {
       doc: '中文English,', selection: { anchor: '中文English,'.length },
       extensions: [editorInfoField.init(() => ({ file } as never))],
     });
-    const range = plugin.spotLibertyZone({ docChanged: true, view: { state } } as unknown as ViewUpdate);
+    const tr = state.update({ changes: { from: 0, to: 1, insert: '中' } });
+    const range = plugin.spotLibertyZone({ docChanged: tr.docChanged, state: tr.state, transactions: [tr] } as unknown as ViewUpdate);
     if (code) expect(range).toBeUndefined();
     else expect(range).toEqual({ from: 0, to: state.doc.length });
     expect(getFileCache).toHaveBeenCalledWith(file);
+  });
+});
+
+function spacingUpdate(userEvent?: string, insert = ',') {
+  const initial = 'Previous line\n😀 测试A4纸';
+  const startState = EditorState.create({ doc: initial });
+  const tr = startState.update({
+    changes: { from: initial.length, insert },
+    selection: { anchor: initial.length + insert.length },
+    userEvent,
+  });
+  const dispatch = vi.fn();
+  const update = {
+    docChanged: tr.docChanged, changes: tr.changes,
+    state: tr.state, selectionSet: true, transactions: [tr],
+    view: { state: tr.state, dispatch },
+  } as unknown as ViewUpdate;
+  return { update, dispatch };
+}
+
+describe('applying a spacing plan', () => {
+  it('shares the plan with the indicator and applies only the planned gaps', () => {
+    const plugin = new TypingTransformer({} as never, {} as never);
+    const { update, dispatch } = spacingUpdate('input.type');
+    const free = vi.fn();
+    const plan = vi.mocked(planLine).mockClear().mockReturnValueOnce({
+      from: 0, to: 9, takeEdits: () => new Uint32Array([5, 5, 7, 7]), free, [Symbol.dispose]: free,
+    });
+    expect(plugin.spotLibertyZone(update)).toEqual({ from: 14, to: 23 });
+    plugin.addLiberty(update);
+    expect(plan).toHaveBeenCalledExactlyOnceWith('😀 测试A4纸,', 9);
+    expect(free).toHaveBeenCalledOnce();
+    expect(dispatch).toHaveBeenCalledOnce();
+    const changes = dispatch.mock.calls[0][0].changes;
+    expect(changes).toEqual([{ from: 19, to: 19, insert: ' ' }, { from: 21, to: 21, insert: ' ' }]);
+    const after = update.state.update(dispatch.mock.calls[0][0]).state;
+    expect(after.doc.toString()).toBe('Previous line\n😀 测试 A4 纸,');
+    expect(after.selection.main.head).toBe(after.doc.length);
+  });
+
+  it.each([undefined, 'input.paste', 'undo', 'redo'])('ignores non-typing edits (%s)', event => {
+    const plugin = new TypingTransformer({} as never, {} as never);
+    const { update, dispatch } = spacingUpdate(event);
+    vi.mocked(planLine).mockClear();
+    plugin.addLiberty(update);
+    expect(planLine).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it('does not dispatch a second transaction when there are no gaps to change', () => {
+    const plugin = new TypingTransformer({} as never, {} as never);
+    const { update, dispatch } = spacingUpdate('input.type');
+    vi.mocked(planLine).mockClear();
+    plugin.addLiberty(update);
+    expect(planLine).toHaveBeenCalledOnce();
+    expect(dispatch).not.toHaveBeenCalled();
   });
 });
 

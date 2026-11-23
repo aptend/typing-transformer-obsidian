@@ -4,9 +4,9 @@ import { history } from '@codemirror/commands';
 import { EditorView, ViewUpdate } from '@codemirror/view';
 
 import { default as wasmbin } from '../liberty-web/charliberty_bg.wasm';
-import init, { formatLine, getBlockRanges } from '../liberty-web/charliberty';
+import init, { planLine } from '../liberty-web/charliberty';
 import { PUNCTS } from './const';
-import { initLog, log } from './utils';
+import { initLog } from './utils';
 import { Rules } from './ext_convert';
 import { computeConvertChanges, computeSideInsertChanges } from './editor_logic';
 import { libertyZone } from './ext_libertyzone';
@@ -24,6 +24,11 @@ enum ExtID {
 }
 
 const ProgramTxn = Annotation.define<boolean>();
+
+type FormattingPlan = {
+	zone: { from: number, to: number };
+	changes: { from: number, to: number, insert: string }[];
+};
 
 const deubgExt = StateField.define({
 	create: (_state): number => { return 0; },
@@ -166,86 +171,67 @@ export default class TypingTransformer extends Plugin {
 	};
 
 	// Features
-	spotLibertyZone = ({ view, docChanged }: ViewUpdate): { from: number, to: number } => {
-		if (!docChanged) { return; }
-		const state = view.state;
-		const mainSel = state.selection.asSingle().main;
-		if (mainSel.anchor != mainSel.head) { return; } // skip range selection
+	private libertyPlans = new WeakMap<ViewUpdate, FormattingPlan>();
 
-		const line = state.doc.lineAt(mainSel.anchor);
-		const from = line.from;
-		const to = mainSel.anchor;
-		if (from == to) { return; } // skip empty string and... 
+	private getLibertyPlan = (update: ViewUpdate): FormattingPlan => {
+		if (this.libertyPlans.has(update)) { return this.libertyPlans.get(update); }
+		const plan = this.computeLibertyPlan(update);
+		this.libertyPlans.set(update, plan);
+		return plan;
+	};
+
+	private computeLibertyPlan = (update: ViewUpdate): FormattingPlan => {
+		if (!update.docChanged || update.transactions.some(tr => ignoreThisTr(tr))) { return; }
+		const state = update.state;
+		const { main, ranges } = state.selection;
+		if (ranges.length !== 1 || !main.empty) { return; }
+
+		const line = state.doc.lineAt(main.head);
+		const cursor = main.head - line.from;
+		if (cursor === 0) { return; }
 		// Metadata from another note must not decide whether this editor can format.
 		const infoField = editorInfoField ?? editorViewField;
 		const file = infoField ? state.field(infoField, false)?.file : undefined;
 		const sections = file ? this.app.metadataCache.getFileCache(file)?.sections : undefined;
-		for (const section of sections ?? []) { // ... special sections and ..
+		for (const section of sections ?? []) {
 			if (section.type !== 'code' && section.type !== 'match') { continue; }
 			const pos = section.position;
 			// pos.start.line is 0-based while line.number is 1-based
 			if (pos.start.line <= line.number - 1 && line.number - 1 <= pos.end.line) { return; }
 		}
 
-		const checkInBlock = (blocks: Uint32Array, offset: number): { exist: boolean, from: number, to: number } => {
-			for (let i = blocks.length - 2; i > -1; i -= 2) {
-				// a cursor at `offset`, is at the left side of `offset`-th char, so left-opend right-close here
-				if (blocks[i] < offset && offset <= blocks[i + 1]) {
-					return { exist: true, from: blocks[i], to: blocks[i + 1] };
-				}
+		const plan = planLine(line.text, cursor);
+		if (!plan) { return; }
+		try {
+			const gaps = plan.takeEdits();
+			const changes: FormattingPlan['changes'] = [];
+			for (let i = 0; i < gaps.length; i += 2) {
+				const [from, to] = [gaps[i], gaps[i + 1]];
+				changes.push({ from: line.from + from, to: line.from + to, insert: from === to ? ' ' : '' });
 			}
-			return { exist: false, from: 0, to: 0 };
-		};
-
-		const blocks = getBlockRanges(line.text, to - from);
-
-		const r = checkInBlock(blocks.emphasis, to - from);
-		if (r.exist) {
-			// cursor is in *xx*, **xx**, _x_, __xx__ block, only the content needs formatting
-			const txt = state.sliceDoc(from + r.from, from + r.to);
-			let i;
-			for (i = 0; txt[i] == txt[0] && i < r.to; i++) {
-				log("format: skip emphasis head", i, txt[i]);
-			}
-			return { from: from + r.from + i, to };
+			return { zone: { from: line.from + plan.from, to: line.from + plan.to }, changes };
+		} finally {
+			plan.free();
 		}
-
-		const spBlocks = blocks.special;
-
-		if (checkInBlock(spBlocks, to - from).exist) { return; } // ...skip special block
-
-		const txt = state.sliceDoc(from, to);
-
-		// find the last segment of the input 
-		// -2 to skip trailing punct, if any
-		for (let i = txt.length - 2; i > 0; i--) {
-			const ch = txt[i];
-			if (ch != ' ' && PUNCTS.has(ch) && !checkInBlock(spBlocks, i).exist) {
-				return { from: from + i, to };
-			}
-		}
-
-		return { from, to };
 	};
 
+	spotLibertyZone = (update: ViewUpdate) => this.getLibertyPlan(update)?.zone;
+
 	addLiberty = (update: ViewUpdate) => {
-		const range = this.spotLibertyZone(update);
-		// selectionSet is important, recursive call otherwise.
-		if (range === undefined || !update.selectionSet) { return; }
-		if (update.transactions.some(tr => ignoreThisTr(tr))) { return; }
-		const from = range.from, to = range.to;
-		const toUpdate = update.view.state.doc.sliceString(from, to);
-		if (PUNCTS.has(toUpdate.charAt(toUpdate.length - 1))) {
-			const trimmed = toUpdate.trim();
-			if (trimmed === '') { return; } // skip empty string
-			const lspace = toUpdate.length - toUpdate.trimStart().length;
-			const rspace = toUpdate.length - toUpdate.trimEnd().length;
-			log("foramt: trigger char: %s, toUpdate: %s, lspace: %d, rspace: %d",
-				toUpdate.charAt(toUpdate.length - 1), toUpdate, lspace, rspace);
-			const formatted = formatLine(trimmed);
-			// no need to update if no change. It will block redo/undo stack otherwise.
-			if (formatted === trimmed) { return; }
-			update.view.dispatch({ changes: { from: from + lspace, to: to - rspace, insert: formatLine(trimmed) }, annotations: ProgramTxn.of(true) });
+		const { state, view } = update;
+		if (!update.docChanged || !update.selectionSet || state !== view.state ||
+			!update.transactions.some(tr => tr.isUserEvent('input.type'))) { return; }
+		const cursor = state.selection.main.head;
+		if (!PUNCTS.has(state.doc.sliceString(Math.max(0, cursor - 1), cursor))) { return; }
+		let typedTrigger = false;
+		update.changes.iterChanges((_a, _b, from, to) => {
+			if (from < cursor && cursor <= to) { typedTrigger = true; }
+		});
+		if (!typedTrigger) { return; }
+
+		const plan = this.getLibertyPlan(update);
+		if (plan?.changes.length) {
+			view.dispatch({ changes: plan.changes, annotations: ProgramTxn.of(true) });
 		}
 	};
 

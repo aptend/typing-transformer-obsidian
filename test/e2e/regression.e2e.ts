@@ -406,6 +406,35 @@ describe('real Obsidian regression', () => {
       await roundTrip('', 'hello world,');
     });
 
+    it(`${live ? 'Live Preview' : 'Source'}: spaces mixed text without splitting versions or touching inline code`, async () => {
+      await resetRules();
+      const initial = '😀测试A4纸，版本v2.1.3发布到p_cache和q_cache';
+      const path = await openNote(live, initial);
+      await focusNote(path, live, 0, initial.length);
+      await type(',');
+      // The final comma formats the current fragment only.
+      const formatted = '😀测试A4纸，版本 v2.1.3 发布到 p_cache 和 q_cache,';
+      await expectText(formatted);
+      assert.equal((await contents()).head, formatted.length);
+      await chord('z');
+      await expectText(initial + ',');
+      await chord('y');
+      await expectText(formatted);
+
+      // Live Preview can move the caret past a hidden closing backtick.
+      // Put it inside the visible code, away from the delimiter.
+      const prefix = '😀😀`中文ABC';
+      const suffix = 'D`';
+      const code = await openNote(live, prefix + suffix);
+      await focusNote(code, live, 0, prefix.length);
+      const caret = await contents();
+      assert.equal(caret.text, prefix + suffix);
+      assert.equal(caret.anchor, prefix.length);
+      assert.equal(caret.head, prefix.length);
+      await type(',');
+      await expectText(prefix + ',' + suffix);
+    });
+
     it(`${live ? 'Live Preview' : 'Source'}: unrelated note metadata cannot change code-block protection`, async () => {
       await resetRules();
       const plain = await openNote(live);
