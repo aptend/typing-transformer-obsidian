@@ -421,11 +421,18 @@ describe('real Obsidian regression', () => {
       await chord('y');
       await expectText(formatted);
 
-      const prefix = '😀`中文ABC';
-      const code = await openNote(live, prefix + '`');
+      // Live Preview can move the caret past a hidden closing backtick.
+      // Put it inside the visible code, away from the delimiter.
+      const prefix = '😀😀`中文ABC';
+      const suffix = 'D`';
+      const code = await openNote(live, prefix + suffix);
       await focusNote(code, live, 0, prefix.length);
+      const caret = await contents();
+      assert.equal(caret.text, prefix + suffix);
+      assert.equal(caret.anchor, prefix.length);
+      assert.equal(caret.head, prefix.length);
       await type(',');
-      await expectText(prefix + ',`');
+      await expectText(prefix + ',' + suffix);
     });
 
     it(`${live ? 'Live Preview' : 'Source'}: unrelated note metadata cannot change code-block protection`, async () => {
